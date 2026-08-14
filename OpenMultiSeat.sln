@@ -21,6 +21,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenMultiSeat.GUI", "src\Op
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenMultiSeat.Tests", "tests\OpenMultiSeat.Tests\OpenMultiSeat.Tests.csproj", "{9C9C9C9C-9C9C-9C9C-9C9C-9C9C9C9C9C9C}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Phase0.Poc", "scripts\Phase0.Poc.csproj", "{AA5A5A5A-5A5A-5A5A-5A5A-5A5A5A5A5A5A}"
+EndProject
 
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -64,5 +66,9 @@ Global
 		{9C9C9C9C-9C9C-9C9C-9C9C-9C9C9C9C9C9C}.Debug|x64.Build.0 = Debug|x64
 		{9C9C9C9C-9C9C-9C9C-9C9C-9C9C9C9C9C9C}.Release|x64.ActiveCfg = Release|x64
 		{9C9C9C9C-9C9C-9C9C-9C9C-9C9C9C9C9C9C}.Release|x64.Build.0 = Release|x64
+		{AA5A5A5A-5A5A-5A5A-5A5A-5A5A5A5A5A5A}.Debug|x64.ActiveCfg = Debug|x64
+		{AA5A5A5A-5A5A-5A5A-5A5A-5A5A5A5A5A5A}.Debug|x64.Build.0 = Debug|x64
+		{AA5A5A5A-5A5A-5A5A-5A5A-5A5A5A5A5A5A}.Release|x64.ActiveCfg = Release|x64
+		{AA5A5A5A-5A5A-5A5A-5A5A-5A5A5A5A5A5A}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 EndGlobal
