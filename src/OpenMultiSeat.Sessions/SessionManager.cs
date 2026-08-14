@@ -1,0 +1,338 @@
+using System.Runtime.InteropServices;
+using System.Text;
+
+namespace OpenMultiSeat.Sessions;
+
+public interface ISessionManager
+{
+    Task<WindowsSession?> GetSessionForUserAsync(string userName);
+    Task<IReadOnlyList<WindowsSession>> GetAllSessionsAsync();
+    Task<uint> LaunchProcessInSessionAsync(uint sessionId, string userName, string executablePath, string? arguments = null, string? workingDirectory = null);
+    Task<bool> IsUserLoggedInAsync(string userName);
+    Task MonitorSessionChangesAsync(Func<SessionChangeEvent, Task> onSessionChange, CancellationToken cancellationToken);
+    uint GetActiveConsoleSessionId();
+}
+
+public class SessionChangeEvent
+{
+    public required uint SessionId { get; set; }
+    public required string UserName { get; set; }
+    public required SessionChangeReason Reason { get; set; }
+    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+}
+
+public enum SessionChangeReason
+{
+    ConsoleConnect,
+    ConsoleDisconnect,
+    RemoteConnect,
+    RemoteDisconnect,
+    SessionLogon,
+    SessionLogoff,
+    SessionLock,
+    SessionUnlock
+}
+
+public class SessionManager : ISessionManager
+{
+    private readonly ILogger<SessionManager> _logger;
+    private readonly ISessionEnumerator _enumerator;
+
+    public SessionManager(ILogger<SessionManager> logger, ISessionEnumerator enumerator)
+    {
+        _logger = logger;
+        _enumerator = enumerator;
+    }
+
+    public async Task<WindowsSession?> GetSessionForUserAsync(string userName)
+    {
+        var sessions = await _enumerator.EnumerateSessionsAsync();
+        return sessions.FirstOrDefault(s =>
+            s.UserName.Equals(userName, StringComparison.OrdinalIgnoreCase));
+    }
+
+    public async Task<IReadOnlyList<WindowsSession>> GetAllSessionsAsync()
+    {
+        return await _enumerator.EnumerateSessionsAsync();
+    }
+
+    public async Task<uint> LaunchProcessInSessionAsync(
+        uint sessionId,
+        string userName,
+        string executablePath,
+        string? arguments = null,
+        string? workingDirectory = null)
+    {
+        if (!File.Exists(executablePath))
+            throw new FileNotFoundException($"Executable not found: {executablePath}");
+
+        try
+        {
+            var processId = ProcessLauncher.CreateProcessInSession(
+                sessionId,
+                userName,
+                executablePath,
+                arguments,
+                workingDirectory);
+
+            _logger.LogInformation(
+                $"Process launched in session {sessionId}: {Path.GetFileName(executablePath)} (PID: {processId})");
+
+            return processId;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Failed to launch process in session {sessionId}");
+            throw;
+        }
+    }
+
+    public async Task<bool> IsUserLoggedInAsync(string userName)
+    {
+        var session = await GetSessionForUserAsync(userName);
+        return session != null && session.State == SessionState.Active;
+    }
+
+    public async Task MonitorSessionChangesAsync(
+        Func<SessionChangeEvent, Task> onSessionChange,
+        CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Starting session change monitoring");
+
+        var previousSessions = new Dictionary<uint, WindowsSession>();
+
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            try
+            {
+                var currentSessions = await GetAllSessionsAsync();
+                var currentMap = currentSessions.ToDictionary(s => s.SessionId);
+
+                // Detect new sessions or state changes
+                foreach (var current in currentSessions)
+                {
+                    if (!previousSessions.TryGetValue(current.SessionId, out var previous))
+                    {
+                        // New session
+                        await onSessionChange(new SessionChangeEvent
+                        {
+                            SessionId = current.SessionId,
+                            UserName = current.UserName,
+                            Reason = SessionChangeReason.SessionLogon
+                        });
+                    }
+                    else if (previous.State != current.State)
+                    {
+                        // State changed
+                        var reason = (previous.State, current.State) switch
+                        {
+                            (SessionState.Disconnected, SessionState.Active) => SessionChangeReason.ConsoleConnect,
+                            (SessionState.Active, SessionState.Disconnected) => SessionChangeReason.ConsoleDisconnect,
+                            _ => SessionChangeReason.SessionLogoff
+                        };
+
+                        await onSessionChange(new SessionChangeEvent
+                        {
+                            SessionId = current.SessionId,
+                            UserName = current.UserName,
+                            Reason = reason
+                        });
+                    }
+                }
+
+                // Detect removed sessions
+                foreach (var previous in previousSessions.Values)
+                {
+                    if (!currentMap.ContainsKey(previous.SessionId))
+                    {
+                        await onSessionChange(new SessionChangeEvent
+                        {
+                            SessionId = previous.SessionId,
+                            UserName = previous.UserName,
+                            Reason = SessionChangeReason.SessionLogoff
+                        });
+                    }
+                }
+
+                previousSessions = currentMap;
+                await Task.Delay(1000, cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error monitoring session changes");
+                await Task.Delay(5000, cancellationToken);
+            }
+        }
+
+        _logger.LogInformation("Session change monitoring stopped");
+    }
+
+    public uint GetActiveConsoleSessionId()
+    {
+        return NativeMethods.WtsGetActiveConsoleSessionId();
+    }
+}
+
+public static class ProcessLauncher
+{
+    private static readonly ILogger<SessionManager> _logger;
+
+    static ProcessLauncher()
+    {
+        var factory = new LoggerFactory();
+        _logger = factory.CreateLogger<SessionManager>();
+    }
+
+    public static uint CreateProcessInSession(
+        uint sessionId,
+        string userName,
+        string executablePath,
+        string? arguments = null,
+        string? workingDirectory = null)
+    {
+        // Get session token
+        if (!NativeMethods.WtsQueryUserToken(sessionId, out var userToken))
+        {
+            throw new InvalidOperationException(
+                $"Failed to get user token for session {sessionId}: {Marshal.GetLastWin32Error()}");
+        }
+
+        try
+        {
+            // Create environment block for the user
+            if (!NativeMethods.CreateEnvironmentBlock(out var envBlock, userToken, false))
+            {
+                throw new InvalidOperationException(
+                    $"Failed to create environment block: {Marshal.GetLastWin32Error()}");
+            }
+
+            try
+            {
+                var startInfo = new NativeMethods.STARTUPINFO
+                {
+                    cb = (uint)Marshal.SizeOf<NativeMethods.STARTUPINFO>(),
+                    lpDesktop = "winsta0\\default"
+                };
+
+                var cmdLine = $"\"{executablePath}\"";
+                if (!string.IsNullOrEmpty(arguments))
+                    cmdLine += $" {arguments}";
+
+                var processInfo = new NativeMethods.PROCESS_INFORMATION();
+
+                var success = NativeMethods.CreateProcessAsUser(
+                    userToken,
+                    executablePath,
+                    cmdLine,
+                    IntPtr.Zero,
+                    IntPtr.Zero,
+                    false,
+                    (uint)(NativeMethods.CREATE_NEW_CONSOLE | NativeMethods.CREATE_UNICODE_ENVIRONMENT),
+                    envBlock,
+                    workingDirectory ?? Path.GetDirectoryName(executablePath),
+                    ref startInfo,
+                    out processInfo);
+
+                if (!success)
+                {
+                    throw new InvalidOperationException(
+                        $"Failed to create process: {Marshal.GetLastWin32Error()}");
+                }
+
+                // Close process and thread handles
+                if (processInfo.hProcess != IntPtr.Zero)
+                    NativeMethods.CloseHandle(processInfo.hProcess);
+                if (processInfo.hThread != IntPtr.Zero)
+                    NativeMethods.CloseHandle(processInfo.hThread);
+
+                return processInfo.dwProcessId;
+            }
+            finally
+            {
+                if (envBlock != IntPtr.Zero)
+                    NativeMethods.DestroyEnvironmentBlock(envBlock);
+            }
+        }
+        finally
+        {
+            NativeMethods.CloseHandle(userToken);
+        }
+    }
+}
+
+internal static class NativeMethods
+{
+    public const uint CREATE_NEW_CONSOLE = 0x00000010;
+    public const uint CREATE_UNICODE_ENVIRONMENT = 0x00000400;
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct STARTUPINFO
+    {
+        public uint cb;
+        [MarshalAs(UnmanagedType.LPStr)]
+        public string lpReserved;
+        [MarshalAs(UnmanagedType.LPStr)]
+        public string lpDesktop;
+        [MarshalAs(UnmanagedType.LPStr)]
+        public string lpTitle;
+        public uint dwX;
+        public uint dwY;
+        public uint dwXSize;
+        public uint dwYSize;
+        public uint dwXCountChars;
+        public uint dwYCountChars;
+        public uint dwFillAttribute;
+        public uint dwFlags;
+        public ushort wShowWindow;
+        public ushort cbReserved2;
+        public IntPtr lpReserved2;
+        public IntPtr hStdInput;
+        public IntPtr hStdOutput;
+        public IntPtr hStdError;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct PROCESS_INFORMATION
+    {
+        public IntPtr hProcess;
+        public IntPtr hThread;
+        public uint dwProcessId;
+        public uint dwThreadId;
+    }
+
+    [DllImport("wtsapi32.dll", SetLastError = true)]
+    public static extern bool WtsQueryUserToken(uint sessionId, out IntPtr phToken);
+
+    [DllImport("userenv.dll", SetLastError = true)]
+    public static extern bool CreateEnvironmentBlock(
+        out IntPtr lpEnvironment,
+        IntPtr hToken,
+        bool bInherit);
+
+    [DllImport("userenv.dll", SetLastError = true)]
+    public static extern bool DestroyEnvironmentBlock(IntPtr lpEnvironment);
+
+    [DllImport("advapi32.dll", SetLastError = true)]
+    public static extern bool CreateProcessAsUser(
+        IntPtr hToken,
+        string lpApplicationName,
+        string lpCommandLine,
+        IntPtr lpProcessAttributes,
+        IntPtr lpThreadAttributes,
+        bool bInheritHandles,
+        uint dwCreationFlags,
+        IntPtr lpEnvironment,
+        string lpCurrentDirectory,
+        ref STARTUPINFO lpStartupInfo,
+        out PROCESS_INFORMATION lpProcessInformation);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern bool CloseHandle(IntPtr hObject);
+
+    [DllImport("wtsapi32.dll", SetLastError = true)]
+    public static extern uint WtsGetActiveConsoleSessionId();
+}
