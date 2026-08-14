@@ -1,0 +1,12 @@
+<Page x:Class="OpenMultiSeat.GUI.Pages.DisplaysPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Displays">
+    <Grid Padding="20">
+        <StackPanel>
+            <TextBlock Text="Displays" FontSize="20" FontWeight="Bold" Margin="0,0,0,20"/>
+            <TextBlock Text="Configuration page for Displays" FontSize="12" Foreground="#666666"/>
+            <Button Content="Configure Displays" Click="OnConfigure" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,10,0,0"/>
+        </StackPanel>
+    </Grid>
+</Page>

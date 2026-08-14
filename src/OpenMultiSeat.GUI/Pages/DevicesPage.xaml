@@ -1,0 +1,30 @@
+<Page x:Class="OpenMultiSeat.GUI.Pages.DevicesPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Devices">
+    <Grid Padding="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="Input Devices" FontSize="20" FontWeight="Bold" Margin="0,0,0,10"/>
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,15">
+            <Button Content="Scan Devices" Click="OnScanDevices" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,0,10,0"/>
+            <Button Content="Refresh" Click="OnRefresh" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,0,10,0"/>
+            <Button Content="Export Report" Click="OnExportReport" Background="#2D2D2D" Foreground="White" Padding="12,8"/>
+        </StackPanel>
+
+        <DataGrid Grid.Row="2" x:Name="DevicesGrid" AutoGenerateColumns="True" Background="White" BorderBrush="#CCCCCC">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Device Name" Binding="{Binding DeviceName}" Width="250"/>
+                <DataGridTextColumn Header="Hardware ID" Binding="{Binding HardwareId}" Width="200"/>
+                <DataGridTextColumn Header="Vendor ID" Binding="{Binding VendorId}" Width="100"/>
+                <DataGridTextColumn Header="Product ID" Binding="{Binding ProductId}" Width="100"/>
+                <DataGridTextColumn Header="First Seen" Binding="{Binding FirstSeen}" Width="150"/>
+            </DataGrid.Columns>
+        </DataGrid>
+    </Grid>
+</Page>

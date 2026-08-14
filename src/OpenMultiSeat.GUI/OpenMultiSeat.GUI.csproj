@@ -12,7 +12,18 @@
 
   <ItemGroup>
     <ProjectReference Include="../OpenMultiSeat.Core/OpenMultiSeat.Core.csproj" />
+    <ProjectReference Include="../OpenMultiSeat.Devices/OpenMultiSeat.Devices.csproj" />
+    <ProjectReference Include="../OpenMultiSeat.Displays/OpenMultiSeat.Displays.csproj" />
+    <ProjectReference Include="../OpenMultiSeat.Sessions/OpenMultiSeat.Sessions.csproj" />
+    <ProjectReference Include="../OpenMultiSeat.InputIsolation/OpenMultiSeat.InputIsolation.csproj" />
+    <ProjectReference Include="../OpenMultiSeat.Audio/OpenMultiSeat.Audio.csproj" />
     <ProjectReference Include="../OpenMultiSeat.IPC/OpenMultiSeat.IPC.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.0" />
   </ItemGroup>
 
 </Project>
