@@ -1,0 +1,68 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.10.0.0
+MinimumVisualStudioVersion = 17.0.31903.59
+
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenMultiSeat.Core", "src\OpenMultiSeat.Core\OpenMultiSeat.Core.csproj", "{1A1A1A1A-1A1A-1A1A-1A1A-1A1A1A1A1A1A}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenMultiSeat.Devices", "src\OpenMultiSeat.Devices\OpenMultiSeat.Devices.csproj", "{2B2B2B2B-2B2B-2B2B-2B2B-2B2B2B2B2B2B}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenMultiSeat.Displays", "src\OpenMultiSeat.Displays\OpenMultiSeat.Displays.csproj", "{3C3C3C3C-3C3C-3C3C-3C3C-3C3C3C3C3C3C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenMultiSeat.Sessions", "src\OpenMultiSeat.Sessions\OpenMultiSeat.Sessions.csproj", "{4D4D4D4D-4D4D-4D4D-4D4D-4D4D4D4D4D4D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenMultiSeat.IPC", "src\OpenMultiSeat.IPC\OpenMultiSeat.IPC.csproj", "{5E5E5E5E-5E5E-5E5E-5E5E-5E5E5E5E5E5E}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenMultiSeat.Audio", "src\OpenMultiSeat.Audio\OpenMultiSeat.Audio.csproj", "{6F6F6F6F-6F6F-6F6F-6F6F-6F6F6F6F6F6F}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenMultiSeat.Service", "src\OpenMultiSeat.Service\OpenMultiSeat.Service.csproj", "{7A7A7A7A-7A7A-7A7A-7A7A-7A7A7A7A7A7A}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenMultiSeat.GUI", "src\OpenMultiSeat.GUI\OpenMultiSeat.GUI.csproj", "{8B8B8B8B-8B8B-8B8B-8B8B-8B8B8B8B8B8B}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenMultiSeat.Tests", "tests\OpenMultiSeat.Tests\OpenMultiSeat.Tests.csproj", "{9C9C9C9C-9C9C-9C9C-9C9C-9C9C9C9C9C9C}"
+EndProject
+
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1A1A1A1A-1A1A-1A1A-1A1A-1A1A1A1A1A1A}.Debug|x64.ActiveCfg = Debug|x64
+		{1A1A1A1A-1A1A-1A1A-1A1A-1A1A1A1A1A1A}.Debug|x64.Build.0 = Debug|x64
+		{1A1A1A1A-1A1A-1A1A-1A1A-1A1A1A1A1A1A}.Release|x64.ActiveCfg = Release|x64
+		{1A1A1A1A-1A1A-1A1A-1A1A-1A1A1A1A1A1A}.Release|x64.Build.0 = Release|x64
+		{2B2B2B2B-2B2B-2B2B-2B2B-2B2B2B2B2B2B}.Debug|x64.ActiveCfg = Debug|x64
+		{2B2B2B2B-2B2B-2B2B-2B2B-2B2B2B2B2B2B}.Debug|x64.Build.0 = Debug|x64
+		{2B2B2B2B-2B2B-2B2B-2B2B-2B2B2B2B2B2B}.Release|x64.ActiveCfg = Release|x64
+		{2B2B2B2B-2B2B-2B2B-2B2B-2B2B2B2B2B2B}.Release|x64.Build.0 = Release|x64
+		{3C3C3C3C-3C3C-3C3C-3C3C-3C3C3C3C3C3C}.Debug|x64.ActiveCfg = Debug|x64
+		{3C3C3C3C-3C3C-3C3C-3C3C-3C3C3C3C3C3C}.Debug|x64.Build.0 = Debug|x64
+		{3C3C3C3C-3C3C-3C3C-3C3C-3C3C3C3C3C3C}.Release|x64.ActiveCfg = Release|x64
+		{3C3C3C3C-3C3C-3C3C-3C3C-3C3C3C3C3C3C}.Release|x64.Build.0 = Release|x64
+		{4D4D4D4D-4D4D-4D4D-4D4D-4D4D4D4D4D4D}.Debug|x64.ActiveCfg = Debug|x64
+		{4D4D4D4D-4D4D-4D4D-4D4D-4D4D4D4D4D4D}.Debug|x64.Build.0 = Debug|x64
+		{4D4D4D4D-4D4D-4D4D-4D4D-4D4D4D4D4D4D}.Release|x64.ActiveCfg = Release|x64
+		{4D4D4D4D-4D4D-4D4D-4D4D-4D4D4D4D4D4D}.Release|x64.Build.0 = Release|x64
+		{5E5E5E5E-5E5E-5E5E-5E5E-5E5E5E5E5E5E}.Debug|x64.ActiveCfg = Debug|x64
+		{5E5E5E5E-5E5E-5E5E-5E5E-5E5E5E5E5E5E}.Debug|x64.Build.0 = Debug|x64
+		{5E5E5E5E-5E5E-5E5E-5E5E-5E5E5E5E5E5E}.Release|x64.ActiveCfg = Release|x64
+		{5E5E5E5E-5E5E-5E5E-5E5E-5E5E5E5E5E5E}.Release|x64.Build.0 = Release|x64
+		{6F6F6F6F-6F6F-6F6F-6F6F-6F6F6F6F6F6F}.Debug|x64.ActiveCfg = Debug|x64
+		{6F6F6F6F-6F6F-6F6F-6F6F-6F6F6F6F6F6F}.Debug|x64.Build.0 = Debug|x64
+		{6F6F6F6F-6F6F-6F6F-6F6F-6F6F6F6F6F6F}.Release|x64.ActiveCfg = Release|x64
+		{6F6F6F6F-6F6F-6F6F-6F6F-6F6F6F6F6F6F}.Release|x64.Build.0 = Release|x64
+		{7A7A7A7A-7A7A-7A7A-7A7A-7A7A7A7A7A7A}.Debug|x64.ActiveCfg = Debug|x64
+		{7A7A7A7A-7A7A-7A7A-7A7A-7A7A7A7A7A7A}.Debug|x64.Build.0 = Debug|x64
+		{7A7A7A7A-7A7A-7A7A-7A7A-7A7A7A7A7A7A}.Release|x64.ActiveCfg = Release|x64
+		{7A7A7A7A-7A7A-7A7A-7A7A-7A7A7A7A7A7A}.Release|x64.Build.0 = Release|x64
+		{8B8B8B8B-8B8B-8B8B-8B8B-8B8B8B8B8B8B}.Debug|x64.ActiveCfg = Debug|x64
+		{8B8B8B8B-8B8B-8B8B-8B8B-8B8B8B8B8B8B}.Debug|x64.Build.0 = Debug|x64
+		{8B8B8B8B-8B8B-8B8B-8B8B-8B8B8B8B8B8B}.Release|x64.ActiveCfg = Release|x64
+		{8B8B8B8B-8B8B-8B8B-8B8B-8B8B8B8B8B8B}.Release|x64.Build.0 = Release|x64
+		{9C9C9C9C-9C9C-9C9C-9C9C-9C9C9C9C9C9C}.Debug|x64.ActiveCfg = Debug|x64
+		{9C9C9C9C-9C9C-9C9C-9C9C-9C9C9C9C9C9C}.Debug|x64.Build.0 = Debug|x64
+		{9C9C9C9C-9C9C-9C9C-9C9C-9C9C9C9C9C9C}.Release|x64.ActiveCfg = Release|x64
+		{9C9C9C9C-9C9C-9C9C-9C9C-9C9C9C9C9C9C}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+EndGlobal
