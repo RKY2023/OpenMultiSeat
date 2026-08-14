@@ -31,6 +31,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Phase3.SessionTester", "scr
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Phase4.DisplayConfigurator", "scripts\Phase4.DisplayConfigurator.csproj", "{EE9E9E9E-9E9E-9E9E-9E9E-9E9E9E9E9E9E}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenMultiSeat.InputIsolation", "src\OpenMultiSeat.InputIsolation\OpenMultiSeat.InputIsolation.csproj", "{FF0F0F0F-0F0F-0F0F-0F0F-0F0F0F0F0F0F}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Phase5.InputIsolationTester", "scripts\Phase5.InputIsolationTester.csproj", "{AA1A1A1A-1A1A-1A1A-1A1A-1A1A1A1A1A1A}"
+EndProject
 
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -94,5 +98,13 @@ Global
 		{EE9E9E9E-9E9E-9E9E-9E9E-9E9E9E9E9E9E}.Debug|x64.Build.0 = Debug|x64
 		{EE9E9E9E-9E9E-9E9E-9E9E-9E9E9E9E9E9E}.Release|x64.ActiveCfg = Release|x64
 		{EE9E9E9E-9E9E-9E9E-9E9E-9E9E9E9E9E9E}.Release|x64.Build.0 = Release|x64
+		{FF0F0F0F-0F0F-0F0F-0F0F-0F0F0F0F0F0F}.Debug|x64.ActiveCfg = Debug|x64
+		{FF0F0F0F-0F0F-0F0F-0F0F-0F0F0F0F0F0F}.Debug|x64.Build.0 = Debug|x64
+		{FF0F0F0F-0F0F-0F0F-0F0F-0F0F0F0F0F0F}.Release|x64.ActiveCfg = Release|x64
+		{FF0F0F0F-0F0F-0F0F-0F0F-0F0F0F0F0F0F}.Release|x64.Build.0 = Release|x64
+		{AA1A1A1A-1A1A-1A1A-1A1A-1A1A1A1A1A1A}.Debug|x64.ActiveCfg = Debug|x64
+		{AA1A1A1A-1A1A-1A1A-1A1A-1A1A1A1A1A1A}.Debug|x64.Build.0 = Debug|x64
+		{AA1A1A1A-1A1A-1A1A-1A1A-1A1A1A1A1A1A}.Release|x64.ActiveCfg = Release|x64
+		{AA1A1A1A-1A1A-1A1A-1A1A-1A1A1A1A1A1A}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 EndGlobal
