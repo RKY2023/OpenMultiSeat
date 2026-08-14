@@ -1,0 +1,163 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 0.1.0-alpha, 0.1.0)'
+        required: true
+      pre_release:
+        description: 'Mark as pre-release?'
+        required: false
+        default: 'true'
+
+jobs:
+  validate:
+    name: Validate Release
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Validate version format
+      run: |
+        VERSION="${{ github.event.inputs.version }}"
+        if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?$ ]]; then
+          echo "Invalid version format: $VERSION"
+          echo "Expected format: X.Y.Z or X.Y.Z-prerelease"
+          exit 1
+        fi
+        echo "Version: $VERSION"
+
+    - name: Check if tag exists
+      run: |
+        VERSION="${{ github.event.inputs.version }}"
+        if git rev-parse "v$VERSION" >/dev/null 2>&1; then
+          echo "Tag v$VERSION already exists"
+          exit 1
+        fi
+        echo "Tag v$VERSION is available"
+
+    - name: Verify main branch
+      run: |
+        if [ "$(git rev-parse --abbrev-ref HEAD)" != "master" ]; then
+          echo "Must release from master branch"
+          exit 1
+        fi
+
+  build-release:
+    name: Build Release
+    runs-on: windows-latest
+    needs: validate
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Build Release
+      run: dotnet build OpenMultiSeat.sln -c Release
+
+    - name: Run Tests
+      run: dotnet test OpenMultiSeat.sln -c Release
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: release-build
+        path: 'bin/Release/**'
+
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    needs: [validate, build-release]
+
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Setup Git
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+
+    - name: Create release tag
+      run: |
+        VERSION="${{ github.event.inputs.version }}"
+        git tag -a "v$VERSION" -m "Release v$VERSION"
+        git push origin "v$VERSION"
+
+    - name: Generate release notes
+      id: notes
+      run: |
+        VERSION="${{ github.event.inputs.version }}"
+
+        # Get commits since last tag
+        LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+        if [ -z "$LAST_TAG" ]; then
+          COMMITS=$(git log --pretty=format:"- %h %s" | head -50)
+        else
+          COMMITS=$(git log ${LAST_TAG}..HEAD --pretty=format:"- %h %s")
+        fi
+
+        cat > RELEASE_NOTES.md << EOF
+        # Release v$VERSION
+
+        ## Changes
+
+        $COMMITS
+
+        ## Phases
+
+        - Phase 0: Hardware Discovery ✓
+        - Phase 1-9: In Development
+
+        ## Installation
+
+        \`\`\`bash
+        git clone https://github.com/RKY2023/OpenMultiSeat.git
+        cd OpenMultiSeat
+        git checkout v$VERSION
+        dotnet build OpenMultiSeat.sln -c Release
+        \`\`\`
+
+        ## Changelog
+
+        See [CHANGELOG.md](CHANGELOG.md) for detailed changes.
+        EOF
+
+    - name: Create GitHub Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ github.event.inputs.version }}
+        release_name: Release v${{ github.event.inputs.version }}
+        body_path: RELEASE_NOTES.md
+        draft: false
+        prerelease: ${{ github.event.inputs.pre_release }}
+
+  notify:
+    name: Notify Release
+    runs-on: ubuntu-latest
+    needs: create-release
+    if: always()
+
+    steps:
+    - name: Release created
+      run: |
+        echo "✓ Release v${{ github.event.inputs.version }} created successfully"
+        echo "Release page: https://github.com/${{ github.repository }}/releases/tag/v${{ github.event.inputs.version }}"

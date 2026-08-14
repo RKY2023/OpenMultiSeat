@@ -1,0 +1,162 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [ master, develop, "feature/**" ]
+  pull_request:
+    branches: [ master, develop ]
+  schedule:
+    - cron: '0 2 * * 0'  # Weekly security scan
+
+jobs:
+  build:
+    name: Build & Test
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        configuration: [Debug, Release]
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Full history for versioning
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore OpenMultiSeat.sln
+
+    - name: Build
+      run: dotnet build OpenMultiSeat.sln -c ${{ matrix.configuration }} --no-restore
+
+    - name: Run Tests
+      run: dotnet test OpenMultiSeat.sln -c ${{ matrix.configuration }} --no-build --verbosity normal --logger "console;verbosity=detailed"
+
+    - name: Upload test results
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results-${{ matrix.configuration }}
+        path: '**/TestResults/**'
+
+  code-quality:
+    name: Code Quality
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Install dependencies
+      run: dotnet restore OpenMultiSeat.sln
+
+    - name: Check format
+      run: dotnet format --verify-no-changes --verbosity diagnostic
+      continue-on-error: true
+
+    - name: Analyze code
+      run: |
+        dotnet build OpenMultiSeat.sln -c Release --no-restore /p:TreatWarningsAsErrors=true
+
+    - name: Check for style violations
+      run: dotnet format --verify-no-changes
+      continue-on-error: true
+
+  security:
+    name: Security Analysis
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore OpenMultiSeat.sln
+
+    - name: Scan NuGet packages for vulnerabilities
+      run: dotnet list OpenMultiSeat.sln package --vulnerable
+      continue-on-error: true
+
+    - name: Check for credential exposure
+      uses: trufflesecurity/trufflehog@main
+      with:
+        path: ./
+        base: ${{ github.event.repository.default_branch }}
+        head: HEAD
+      continue-on-error: true
+
+  dependency-check:
+    name: Dependency Scan
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Dependency review
+      uses: actions/dependency-review-action@v4
+      if: github.event_name == 'pull_request'
+      with:
+        fail-on-severity: critical
+
+  docs:
+    name: Documentation
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Check documentation
+      run: |
+        # Verify key documentation files exist
+        test -f README.md || (echo "Missing README.md" && exit 1)
+        test -f CONTRIBUTING.md || (echo "Missing CONTRIBUTING.md" && exit 1)
+        test -f SECURITY.md || (echo "Missing SECURITY.md" && exit 1)
+        test -f docs/architecture.md || (echo "Missing architecture docs" && exit 1)
+        test -f .github/CODEOWNERS || (echo "Missing CODEOWNERS" && exit 1)
+      continue-on-error: false
+
+  lint:
+    name: Linting
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Check for common issues
+      run: |
+        # Check for large files
+        find . -name "*.cs" -size +1M -exec echo "WARNING: Large file: {}" \;
+
+        # Check for TODO/FIXME comments
+        grep -r "TODO\|FIXME" src/ docs/ --include="*.cs" --include="*.md" || true
+      continue-on-error: true
+
+  results:
+    name: Test Results Summary
+    runs-on: ubuntu-latest
+    needs: [build, code-quality, security, docs]
+    if: always()
+
+    steps:
+    - name: All checks passed
+      if: ${{ !contains(needs.*.result, 'failure') }}
+      run: echo "✓ All checks passed"
+
+    - name: Some checks failed
+      if: ${{ contains(needs.*.result, 'failure') }}
+      run: |
+        echo "✗ Some checks failed"
+        exit 1

@@ -1,0 +1,40 @@
+# CODEOWNERS file for OpenMultiSeat
+# https://help.github.com/articles/about-codeowners/
+
+# Default owners for all code
+* @RKY2023
+
+# Security policy
+SECURITY.md @RKY2023
+.github/security-policy.md @RKY2023
+
+# Build and CI configuration
+.github/workflows/ @RKY2023
+*.sln @RKY2023
+.gitignore @RKY2023
+build/ @RKY2023
+scripts/ @RKY2023
+
+# Core library
+src/OpenMultiSeat.Core/ @RKY2023
+src/OpenMultiSeat.Devices/ @RKY2023
+src/OpenMultiSeat.Displays/ @RKY2023
+src/OpenMultiSeat.Sessions/ @RKY2023
+
+# Service and IPC
+src/OpenMultiSeat.Service/ @RKY2023
+src/OpenMultiSeat.IPC/ @RKY2023
+
+# User interfaces
+src/OpenMultiSeat.GUI/ @RKY2023
+
+# Audio subsystem
+src/OpenMultiSeat.Audio/ @RKY2023
+
+# Tests
+tests/ @RKY2023
+
+# Documentation
+docs/ @RKY2023
+README.md @RKY2023
+CONTRIBUTING.md @RKY2023
