@@ -37,6 +37,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Phase5.InputIsolationTester
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Phase6.AudioConfigurator", "scripts\Phase6.AudioConfigurator.csproj", "{BB2B2B2B-2B2B-2B2B-2B2B-2B2B2B2B2B2B}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenMultiSeat.Reliability", "src\OpenMultiSeat.Reliability\OpenMultiSeat.Reliability.csproj", "{CC3C3C3C-3C3C-3C3C-3C3C-3C3C3C3C3C3C}"
+EndProject
 
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -112,5 +114,9 @@ Global
 		{BB2B2B2B-2B2B-2B2B-2B2B-2B2B2B2B2B2B}.Debug|x64.Build.0 = Debug|x64
 		{BB2B2B2B-2B2B-2B2B-2B2B-2B2B2B2B2B2B}.Release|x64.ActiveCfg = Release|x64
 		{BB2B2B2B-2B2B-2B2B-2B2B-2B2B2B2B2B2B}.Release|x64.Build.0 = Release|x64
+		{CC3C3C3C-3C3C-3C3C-3C3C-3C3C3C3C3C3C}.Debug|x64.ActiveCfg = Debug|x64
+		{CC3C3C3C-3C3C-3C3C-3C3C-3C3C3C3C3C3C}.Debug|x64.Build.0 = Debug|x64
+		{CC3C3C3C-3C3C-3C3C-3C3C-3C3C3C3C3C3C}.Release|x64.ActiveCfg = Release|x64
+		{CC3C3C3C-3C3C-3C3C-3C3C-3C3C3C3C3C3C}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 EndGlobal
