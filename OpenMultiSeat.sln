@@ -25,6 +25,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Phase0.Poc", "scripts\Phase
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Phase1.DeviceTester", "scripts\Phase1.DeviceTester.csproj", "{BB6B6B6B-6B6B-6B6B-6B6B-6B6B6B6B6B6B}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Phase2.SeatConfigurator", "scripts\Phase2.SeatConfigurator.csproj", "{CC7C7C7C-7C7C-7C7C-7C7C-7C7C7C7C7C7C}"
+EndProject
 
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -76,5 +78,9 @@ Global
 		{BB6B6B6B-6B6B-6B6B-6B6B-6B6B6B6B6B6B}.Debug|x64.Build.0 = Debug|x64
 		{BB6B6B6B-6B6B-6B6B-6B6B-6B6B6B6B6B6B}.Release|x64.ActiveCfg = Release|x64
 		{BB6B6B6B-6B6B-6B6B-6B6B-6B6B6B6B6B6B}.Release|x64.Build.0 = Release|x64
+		{CC7C7C7C-7C7C-7C7C-7C7C-7C7C7C7C7C7C}.Debug|x64.ActiveCfg = Debug|x64
+		{CC7C7C7C-7C7C-7C7C-7C7C-7C7C7C7C7C7C}.Debug|x64.Build.0 = Debug|x64
+		{CC7C7C7C-7C7C-7C7C-7C7C-7C7C7C7C7C7C}.Release|x64.ActiveCfg = Release|x64
+		{CC7C7C7C-7C7C-7C7C-7C7C-7C7C7C7C7C7C}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 EndGlobal
