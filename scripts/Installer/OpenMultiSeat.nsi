@@ -20,6 +20,7 @@ InstallDir "$PROGRAMFILES64\${PRODUCT_NAME}"
 ; Installer Attributes
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
 OutFile "..\..\build\installer\OpenMultiSeat-${PRODUCT_VERSION}-x64-setup.exe"
+RequestExecutionLevel admin
 ShowInstDetails show
 ShowUnInstDetails show
 
@@ -75,13 +76,13 @@ Section "Testing Tools" SEC03
   SetOutPath "$INSTDIR\tools"
   SetOverwrite try
 
-  File "..\..\scripts\bin\x64\Release\net9.0-windows\Phase0.Poc.exe"
-  File "..\..\scripts\bin\x64\Release\net9.0-windows\Phase1.DeviceTester.exe"
-  File "..\..\scripts\bin\x64\Release\net9.0-windows\Phase2.SeatConfigurator.exe"
-  File "..\..\scripts\bin\x64\Release\net9.0-windows\Phase3.SessionTester.exe"
-  File "..\..\scripts\bin\x64\Release\net9.0-windows\Phase4.DisplayConfigurator.exe"
-  File "..\..\scripts\bin\x64\Release\net9.0-windows\Phase5.InputIsolationTester.exe"
-  File "..\..\scripts\bin\x64\Release\net9.0-windows\Phase6.AudioConfigurator.exe"
+  File "..\..\scripts\bin\Phase0.Poc\x64\Release\net9.0-windows\Phase0.Poc.exe"
+  File "..\..\scripts\bin\Phase1.DeviceTester\x64\Release\net9.0-windows\Phase1.DeviceTester.exe"
+  File "..\..\scripts\bin\Phase2.SeatConfigurator\x64\Release\net9.0-windows\Phase2.SeatConfigurator.exe"
+  File "..\..\scripts\bin\Phase3.SessionTester\x64\Release\net9.0-windows\Phase3.SessionTester.exe"
+  File "..\..\scripts\bin\Phase4.DisplayConfigurator\x64\Release\net9.0-windows\Phase4.DisplayConfigurator.exe"
+  File "..\..\scripts\bin\Phase5.InputIsolationTester\x64\Release\net9.0-windows\Phase5.InputIsolationTester.exe"
+  File "..\..\scripts\bin\Phase6.AudioConfigurator\x64\Release\net9.0-windows\Phase6.AudioConfigurator.exe"
 
   SetOutPath "$SMPROGRAMS\${PRODUCT_NAME}\Tools"
   CreateShortCut "$SMPROGRAMS\${PRODUCT_NAME}\Tools\Device Tester.lnk" "$INSTDIR\tools\Phase1.DeviceTester.exe"

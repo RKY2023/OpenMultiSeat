@@ -7,9 +7,13 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <PlatformTarget>x64</PlatformTarget>
+    <BaseOutputPath>bin\$(MSBuildProjectName)\</BaseOutputPath>
+    <BaseIntermediateOutputPath>obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="bin\**" />
+    <Compile Remove="obj\**" />
     <Compile Remove="Program.cs" />
     <Compile Remove="Phase1DeviceTester.cs" />
     <Compile Remove="Phase2SeatConfigurator.cs" />
