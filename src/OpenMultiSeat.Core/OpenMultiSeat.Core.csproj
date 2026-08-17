@@ -10,6 +10,14 @@
 
   <ItemGroup>
     <PackageReference Include="System.Text.Json" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OpenMultiSeat.Devices\OpenMultiSeat.Devices.csproj" />
+    <ProjectReference Include="..\OpenMultiSeat.Displays\OpenMultiSeat.Displays.csproj" />
+    <ProjectReference Include="..\OpenMultiSeat.Sessions\OpenMultiSeat.Sessions.csproj" />
   </ItemGroup>
 
 </Project>
