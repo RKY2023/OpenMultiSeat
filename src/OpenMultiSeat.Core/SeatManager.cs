@@ -1,3 +1,6 @@
+using Microsoft.Extensions.Logging;
+using OpenMultiSeat.Devices;
+
 namespace OpenMultiSeat.Core;
 
 public interface ISeatManager

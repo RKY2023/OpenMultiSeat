@@ -1,3 +1,6 @@
+using Microsoft.Extensions.Logging;
+using OpenMultiSeat.Displays;
+
 namespace OpenMultiSeat.Core;
 
 public interface IDisplayManager
