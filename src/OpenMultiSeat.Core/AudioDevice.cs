@@ -6,6 +6,13 @@ public enum AudioDeviceType
     Recording
 }
 
+public enum AudioDeviceRole
+{
+    Playback,
+    Recording,
+    BiDirectional
+}
+
 public sealed class AudioDevice
 {
     public required string DeviceId { get; set; }

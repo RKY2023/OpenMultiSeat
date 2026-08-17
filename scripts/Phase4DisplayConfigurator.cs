@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using OpenMultiSeat.Core;
+using OpenMultiSeat.Devices;
 using OpenMultiSeat.Displays;
 using System.Text.Json;
 using System.Text.Json.Serialization;
