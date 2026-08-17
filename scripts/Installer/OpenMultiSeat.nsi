@@ -19,7 +19,7 @@ InstallDir "$PROGRAMFILES64\${PRODUCT_NAME}"
 
 ; Installer Attributes
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
-OutFile "OpenMultiSeat-${PRODUCT_VERSION}-x64-setup.exe"
+OutFile "..\..\build\installer\OpenMultiSeat-${PRODUCT_VERSION}-x64-setup.exe"
 ShowInstDetails show
 ShowUnInstDetails show
 
@@ -42,14 +42,14 @@ Section "Core Components" SEC01
   SetOutPath "$INSTDIR\bin"
   SetOverwrite try
 
-  File "..\..\src\OpenMultiSeat.Core\bin\Release\net9.0-windows\OpenMultiSeat.Core.dll"
-  File "..\..\src\OpenMultiSeat.Devices\bin\Release\net9.0-windows\OpenMultiSeat.Devices.dll"
-  File "..\..\src\OpenMultiSeat.Sessions\bin\Release\net9.0-windows\OpenMultiSeat.Sessions.dll"
-  File "..\..\src\OpenMultiSeat.Displays\bin\Release\net9.0-windows\OpenMultiSeat.Displays.dll"
-  File "..\..\src\OpenMultiSeat.InputIsolation\bin\Release\net9.0-windows\OpenMultiSeat.InputIsolation.dll"
-  File "..\..\src\OpenMultiSeat.Audio\bin\Release\net9.0-windows\OpenMultiSeat.Audio.dll"
-  File "..\..\src\OpenMultiSeat.IPC\bin\Release\net9.0-windows\OpenMultiSeat.IPC.dll"
-  File "..\..\src\OpenMultiSeat.Service\bin\Release\net9.0-windows\OpenMultiSeat.Service.exe"
+  File "..\..\src\OpenMultiSeat.Core\bin\x64\Release\net9.0-windows\OpenMultiSeat.Core.dll"
+  File "..\..\src\OpenMultiSeat.Devices\bin\x64\Release\net9.0-windows\OpenMultiSeat.Devices.dll"
+  File "..\..\src\OpenMultiSeat.Sessions\bin\x64\Release\net9.0-windows\OpenMultiSeat.Sessions.dll"
+  File "..\..\src\OpenMultiSeat.Displays\bin\x64\Release\net9.0-windows\OpenMultiSeat.Displays.dll"
+  File "..\..\src\OpenMultiSeat.InputIsolation\bin\x64\Release\net9.0-windows\OpenMultiSeat.InputIsolation.dll"
+  File "..\..\src\OpenMultiSeat.Audio\bin\x64\Release\net9.0-windows\OpenMultiSeat.Audio.dll"
+  File "..\..\src\OpenMultiSeat.IPC\bin\x64\Release\net9.0-windows\OpenMultiSeat.IPC.dll"
+  File "..\..\src\OpenMultiSeat.Service\bin\x64\Release\net9.0-windows\OpenMultiSeat.Service.exe"
 
   SetOutPath "$INSTDIR\config"
   FileOpen $0 "$INSTDIR\config\.gitkeep" w
@@ -62,7 +62,7 @@ Section "GUI Application" SEC02
   SetOutPath "$INSTDIR\bin"
   SetOverwrite try
 
-  File "..\..\src\OpenMultiSeat.GUI\bin\Release\net9.0-windows\OpenMultiSeat.GUI.exe"
+  File "..\..\src\OpenMultiSeat.GUI\bin\x64\Release\net9.0-windows\OpenMultiSeat.GUI.exe"
 
   SetOutPath "$SMPROGRAMS\${PRODUCT_NAME}"
   CreateShortCut "$SMPROGRAMS\${PRODUCT_NAME}\${PRODUCT_NAME} Admin.lnk" "$INSTDIR\bin\OpenMultiSeat.GUI.exe"
@@ -75,13 +75,13 @@ Section "Testing Tools" SEC03
   SetOutPath "$INSTDIR\tools"
   SetOverwrite try
 
-  File "..\..\scripts\Phase0.Poc\bin\Release\net9.0-windows\Phase0.Poc.exe"
-  File "..\..\scripts\Phase1.DeviceTester\bin\Release\net9.0-windows\Phase1.DeviceTester.exe"
-  File "..\..\scripts\Phase2.SeatConfigurator\bin\Release\net9.0-windows\Phase2.SeatConfigurator.exe"
-  File "..\..\scripts\Phase3.SessionTester\bin\Release\net9.0-windows\Phase3.SessionTester.exe"
-  File "..\..\scripts\Phase4.DisplayConfigurator\bin\Release\net9.0-windows\Phase4.DisplayConfigurator.exe"
-  File "..\..\scripts\Phase5.InputIsolationTester\bin\Release\net9.0-windows\Phase5.InputIsolationTester.exe"
-  File "..\..\scripts\Phase6.AudioConfigurator\bin\Release\net9.0-windows\Phase6.AudioConfigurator.exe"
+  File "..\..\scripts\bin\x64\Release\net9.0-windows\Phase0.Poc.exe"
+  File "..\..\scripts\bin\x64\Release\net9.0-windows\Phase1.DeviceTester.exe"
+  File "..\..\scripts\bin\x64\Release\net9.0-windows\Phase2.SeatConfigurator.exe"
+  File "..\..\scripts\bin\x64\Release\net9.0-windows\Phase3.SessionTester.exe"
+  File "..\..\scripts\bin\x64\Release\net9.0-windows\Phase4.DisplayConfigurator.exe"
+  File "..\..\scripts\bin\x64\Release\net9.0-windows\Phase5.InputIsolationTester.exe"
+  File "..\..\scripts\bin\x64\Release\net9.0-windows\Phase6.AudioConfigurator.exe"
 
   SetOutPath "$SMPROGRAMS\${PRODUCT_NAME}\Tools"
   CreateShortCut "$SMPROGRAMS\${PRODUCT_NAME}\Tools\Device Tester.lnk" "$INSTDIR\tools\Phase1.DeviceTester.exe"
