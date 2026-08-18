@@ -18,7 +18,7 @@ sequenceDiagram
     IPC->>SVC: forward request
     SVC->>HID: EnumerateDevices()
     HID->>HID: SetupAPI / Raw Input query
-    HID-->>SVC: List<DeviceRecord>
+    HID-->>SVC: List&lt;DeviceRecord&gt;
     SVC->>DP: SaveDevices(records)
     DP-->>SVC: ack
     SVC-->>IPC: ScanDevicesResponse(records)

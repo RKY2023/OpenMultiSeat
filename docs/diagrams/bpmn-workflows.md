@@ -36,7 +36,7 @@ flowchart TD
     end
 
     U2 --> I1
-    U3 -->|Deny| X1([Install aborted<br/>admin required for<br/>Program Files / HKLM]))
+    U3 -->|Deny| X1([Install aborted<br/>admin required for<br/>Program Files / HKLM])
     I4 --> S1
     U6 --> G1
 ```
