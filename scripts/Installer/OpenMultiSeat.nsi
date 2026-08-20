@@ -19,7 +19,8 @@ InstallDir "$PROGRAMFILES64\${PRODUCT_NAME}"
 
 ; Installer Attributes
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
-OutFile "OpenMultiSeat-${PRODUCT_VERSION}-x64-setup.exe"
+OutFile "..\..\build\installer\OpenMultiSeat-${PRODUCT_VERSION}-x64-setup.exe"
+RequestExecutionLevel admin
 ShowInstDetails show
 ShowUnInstDetails show
 
@@ -42,14 +43,10 @@ Section "Core Components" SEC01
   SetOutPath "$INSTDIR\bin"
   SetOverwrite try
 
-  File "..\..\src\OpenMultiSeat.Core\bin\Release\net9.0-windows\OpenMultiSeat.Core.dll"
-  File "..\..\src\OpenMultiSeat.Devices\bin\Release\net9.0-windows\OpenMultiSeat.Devices.dll"
-  File "..\..\src\OpenMultiSeat.Sessions\bin\Release\net9.0-windows\OpenMultiSeat.Sessions.dll"
-  File "..\..\src\OpenMultiSeat.Displays\bin\Release\net9.0-windows\OpenMultiSeat.Displays.dll"
-  File "..\..\src\OpenMultiSeat.InputIsolation\bin\Release\net9.0-windows\OpenMultiSeat.InputIsolation.dll"
-  File "..\..\src\OpenMultiSeat.Audio\bin\Release\net9.0-windows\OpenMultiSeat.Audio.dll"
-  File "..\..\src\OpenMultiSeat.IPC\bin\Release\net9.0-windows\OpenMultiSeat.IPC.dll"
-  File "..\..\src\OpenMultiSeat.Service\bin\Release\net9.0-windows\OpenMultiSeat.Service.exe"
+  ; Copy the full framework-dependent Service output (exe + dll + deps.json +
+  ; runtimeconfig.json + every dependency, including the shared class-library
+  ; DLLs it references) - a .NET apphost .exe cannot run without these siblings.
+  File /r "..\..\src\OpenMultiSeat.Service\bin\x64\Release\net9.0-windows\*.*"
 
   SetOutPath "$INSTDIR\config"
   FileOpen $0 "$INSTDIR\config\.gitkeep" w
@@ -62,7 +59,10 @@ Section "GUI Application" SEC02
   SetOutPath "$INSTDIR\bin"
   SetOverwrite try
 
-  File "..\..\src\OpenMultiSeat.GUI\bin\Release\net9.0-windows\OpenMultiSeat.GUI.exe"
+  ; Same reasoning as Section01: ship GUI.exe's entire output folder, not just
+  ; the bare exe. Overlapping shared DLLs (Core, Microsoft.Extensions.*, etc.)
+  ; harmlessly overwrite the copies already placed by Section01.
+  File /r "..\..\src\OpenMultiSeat.GUI\bin\x64\Release\net9.0-windows\*.*"
 
   SetOutPath "$SMPROGRAMS\${PRODUCT_NAME}"
   CreateShortCut "$SMPROGRAMS\${PRODUCT_NAME}\${PRODUCT_NAME} Admin.lnk" "$INSTDIR\bin\OpenMultiSeat.GUI.exe"
@@ -75,13 +75,15 @@ Section "Testing Tools" SEC03
   SetOutPath "$INSTDIR\tools"
   SetOverwrite try
 
-  File "..\..\scripts\Phase0.Poc\bin\Release\net9.0-windows\Phase0.Poc.exe"
-  File "..\..\scripts\Phase1.DeviceTester\bin\Release\net9.0-windows\Phase1.DeviceTester.exe"
-  File "..\..\scripts\Phase2.SeatConfigurator\bin\Release\net9.0-windows\Phase2.SeatConfigurator.exe"
-  File "..\..\scripts\Phase3.SessionTester\bin\Release\net9.0-windows\Phase3.SessionTester.exe"
-  File "..\..\scripts\Phase4.DisplayConfigurator\bin\Release\net9.0-windows\Phase4.DisplayConfigurator.exe"
-  File "..\..\scripts\Phase5.InputIsolationTester\bin\Release\net9.0-windows\Phase5.InputIsolationTester.exe"
-  File "..\..\scripts\Phase6.AudioConfigurator\bin\Release\net9.0-windows\Phase6.AudioConfigurator.exe"
+  ; Each Phase* tool is its own framework-dependent apphost with its own
+  ; deps.json/runtimeconfig.json; ship each one's full output folder.
+  File /r "..\..\scripts\bin\Phase0.Poc\x64\Release\net9.0-windows\*.*"
+  File /r "..\..\scripts\bin\Phase1.DeviceTester\x64\Release\net9.0-windows\*.*"
+  File /r "..\..\scripts\bin\Phase2.SeatConfigurator\x64\Release\net9.0-windows\*.*"
+  File /r "..\..\scripts\bin\Phase3.SessionTester\x64\Release\net9.0-windows\*.*"
+  File /r "..\..\scripts\bin\Phase4.DisplayConfigurator\x64\Release\net9.0-windows\*.*"
+  File /r "..\..\scripts\bin\Phase5.InputIsolationTester\x64\Release\net9.0-windows\*.*"
+  File /r "..\..\scripts\bin\Phase6.AudioConfigurator\x64\Release\net9.0-windows\*.*"
 
   SetOutPath "$SMPROGRAMS\${PRODUCT_NAME}\Tools"
   CreateShortCut "$SMPROGRAMS\${PRODUCT_NAME}\Tools\Device Tester.lnk" "$INSTDIR\tools\Phase1.DeviceTester.exe"

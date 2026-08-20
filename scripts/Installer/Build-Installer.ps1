@@ -93,7 +93,7 @@ if (-not (Test-Path $OutputDir)) {
 }
 
 try {
-    & $NSISPath /V4 /O "$OutputDir\build.log" $NSIScript
+    & $NSISPath /V4 "/O$OutputDir\build.log" $NSIScript
     if ($LASTEXITCODE -ne 0) {
         Write-Error "NSIS build failed with exit code $LASTEXITCODE"
         exit 1
