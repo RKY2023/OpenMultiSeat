@@ -15,7 +15,7 @@ namespace OpenMultiSeat.GUI.Pages;
 /// "Confirming Starting of Workplaces" dialog) backed by SeatStartupOrchestrator. Replaces the
 /// former no-op "Configure Settings" stub outright — see
 /// docs/control-panel/general-settings-tab.md for what's real vs. still limited (notably the
-/// DPAPI/SYSTEM caveat under At System Startup).
+/// DPAPI LocalMachine-scope trade-off At System Startup relies on).
 /// </summary>
 public partial class SettingsPage : Page
 {
@@ -57,14 +57,15 @@ public partial class SettingsPage : Page
             SeatStartMode.Manual =>
                 "No scheduled task is registered — nothing starts automatically. Use \"Start Workplaces Now\" below.",
             SeatStartMode.AtSystemStartup =>
-                "A Windows Scheduled Task now runs at boot (as SYSTEM). Limitation: seats with a saved auto-login " +
-                "password currently can't actually be started this way — Windows DPAPI (CurrentUser scope) only " +
-                "decrypts a password for the account that saved it, and SYSTEM isn't that account. The task still " +
-                "runs and logs the attempt to %AppData%\\OpenMultiSeat\\startup-log.txt.",
+                "A Windows Scheduled Task now runs at boot (as SYSTEM) and starts every seat with a saved login. " +
+                "Check %AppData%\\OpenMultiSeat\\startup-log.txt after a reboot to confirm. Note: seat passwords " +
+                "are protected with DPAPI LocalMachine scope so SYSTEM can decrypt them — meaning any local " +
+                "account/process on this machine could, in principle, decrypt a saved seat password too, not just " +
+                "the account that set it.",
             SeatStartMode.AtFirstLogin =>
-                "A Windows Scheduled Task now fires when Workplace 1's (the first seat's) Windows account logs in. " +
-                "Only works end-to-end if seat passwords were saved while logged in as that same account (DPAPI " +
-                "CurrentUser scope) — see %AppData%\\OpenMultiSeat\\startup-log.txt after a logon to check.",
+                "A Windows Scheduled Task now fires when Workplace 1's (the first seat's) Windows account logs in " +
+                "and starts every seat with a saved login. Check %AppData%\\OpenMultiSeat\\startup-log.txt after a " +
+                "logon to confirm.",
             _ => string.Empty
         };
     }

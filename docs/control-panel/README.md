@@ -16,7 +16,7 @@ Each page states **what ASTER's equivalent does**, then **OpenMultiSeat's status
 | Page | ASTER equivalent | Status |
 |---|---|---|
 | [Main Window of ASTER Control Panel](aster-control-panel-main-window.md) | Main window | ✅ Implemented |
-| ["General Settings" Tab](general-settings-tab.md) | General Settings tab | 🚧 Partial — "Assign CPU Cores…" and a real Workplace Start Mode setting (Manual/At System Startup/Via Workplace 1, wired to real Windows Scheduled Tasks) plus "Start Workplaces Now" are real; At System Startup currently can't decrypt DPAPI-CurrentUser-protected seat passwords running as SYSTEM (see the page for the caveat) |
+| ["General Settings" Tab](general-settings-tab.md) | General Settings tab | 🚧 Partial — "Assign CPU Cores…" and a real Workplace Start Mode setting (Manual/At System Startup/Via Workplace 1, wired to real Windows Scheduled Tasks) plus "Start Workplaces Now" are real; seat passwords use DPAPI LocalMachine scope so SYSTEM can decrypt them at boot, at the cost of no longer being a secret from other local accounts (see the page for the trade-off) |
 | ["Workplaces" Tab](workplaces-tab.md) | Workplaces tab | 🚧 Partial — seat list/create/delete, account config, and device/display/audio assignment all real, with both a per-seat "Configure…" view and a shared cross-seat **System** page |
 | ["About" Tab](about-tab.md) | About tab | ✅ Implemented |
 

@@ -37,9 +37,10 @@ public interface ISeatStartupOrchestrator
 /// "--start-seats" entry point the At-System-Startup / Via-Workplace-1 scheduled tasks invoke.
 ///
 /// A seat is skipped (not a failure) when it's disabled, set to "Display login dialog" (no
-/// stored password to auto-login with), or has never had a password saved. See
-/// docs/control-panel/general-settings-tab.md for the DPAPI/SYSTEM caveat this hits under the
-/// At System Startup trigger specifically.
+/// stored password to auto-login with), or has never had a password saved. Decrypting a saved
+/// password works regardless of which Windows account is running this (SYSTEM included, under
+/// At System Startup) because SeatCredentialProtector uses DPAPI LocalMachine scope — see its
+/// doc comment for the trade-off that requires.
 /// </summary>
 public class SeatStartupOrchestrator : ISeatStartupOrchestrator
 {
@@ -85,10 +86,10 @@ public class SeatStartupOrchestrator : ISeatStartupOrchestrator
             }
             catch (Exception ex)
             {
-                // The realistic cause: this process isn't running as the same Windows account
-                // that originally saved the password — DPAPI CurrentUser scope refuses to
-                // decrypt for anyone else. Hit by design under At System Startup (runs as
-                // SYSTEM); see the class doc comment.
+                // With LocalMachine-scoped DPAPI this should succeed regardless of which account
+                // is running — a failure here means something else (corrupted/truncated stored
+                // value, or the password was saved on a different machine, e.g. a restored
+                // seats.json backup).
                 _logger.LogError(ex, $"Couldn't decrypt the saved password for seat {seat.Id} ({seat.Name})");
                 summary.Results.Add(new SeatStartupResult
                 {

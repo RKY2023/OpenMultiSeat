@@ -11,7 +11,9 @@ namespace OpenMultiSeat.GUI.Windows;
 /// ASTER's "User Account for Workstation" dialog: assigns a Windows login (local or domain
 /// account) to a seat, defaulting to "Display login dialog" (no auto-login) exactly like ASTER's
 /// own default. A password, if one is entered, is protected with Windows DPAPI
-/// (CurrentUser scope) and stored base64-encoded on the Seat — never in plaintext.
+/// (LocalMachine scope) and stored base64-encoded on the Seat — never in plaintext. LocalMachine
+/// scope (not CurrentUser) is what lets the "At System Startup" Workplace Start Mode, which runs
+/// as SYSTEM, decrypt it — see SeatCredentialProtector's doc comment for the trade-off that buys.
 ///
 /// Deliberately scoped: this dialog only configures the login (data + real encrypted storage).
 /// It does NOT wire up actual unattended auto-login / session launch (CreateProcessWithLogonW or

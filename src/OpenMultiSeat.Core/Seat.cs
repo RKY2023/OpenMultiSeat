@@ -20,9 +20,10 @@ public sealed class Seat
 
     /// <summary>
     /// The seat's stored login password, protected with Windows DPAPI
-    /// (System.Security.Cryptography.ProtectedData, CurrentUser scope) and base64-encoded — never
+    /// (System.Security.Cryptography.ProtectedData, LocalMachine scope) and base64-encoded — never
     /// stored in plaintext. Null when no password has been set (or DisplayLoginDialog is true).
-    /// Decryptable only by the same Windows user account that encrypted it, on the same machine.
+    /// LocalMachine scope means any local process on this machine can decrypt it (not just the
+    /// Windows account that saved it) — see SeatCredentialProtector's doc comment for why.
     /// </summary>
     public string? EncryptedPassword { get; set; }
 
