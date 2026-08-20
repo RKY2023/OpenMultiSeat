@@ -277,13 +277,6 @@ internal static class NativeMethods
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct DisplayConfigRatioInfo
-    {
-        public uint Numerator;
-        public uint Denominator;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
     public struct DisplayConfigRotation
     {
         public uint Rotation;
@@ -327,6 +320,26 @@ internal static class NativeMethods
         public DisplayConfigPathInfoFlags StatusFlags;
     }
 
+    public enum DisplayConfigScaling : uint
+    {
+        Identity = 1,
+        Centered = 2,
+        Stretched = 3,
+        AspectRatioCenteredMax = 4,
+        Custom = 5,
+        Preferred = 128
+    }
+
+    // Layout matches the real Win32 DISPLAYCONFIG_PATH_TARGET_INFO exactly (52 bytes:
+    // 8+4+4+4+4+4+8+4+4+4). The previous version of this struct was missing scaling,
+    // scanLineOrdering, and targetAvailable entirely, and used the wrong (mismatched-size)
+    // types for the fields at those offsets, making it 40 bytes instead of 52. QueryDisplayConfig
+    // writes pathCount elements of the real 52-byte struct into an array the CLR allocates and
+    // sizes based on Marshal.SizeOf<DisplayConfigPathInfo>() — with the old 40-byte TargetInfo,
+    // that buffer was 12 bytes too small per path, so Windows wrote past the end of the array on
+    // every call. That's a genuine heap buffer overflow, and it's exactly what crashed the app
+    // with STATUS_HEAP_CORRUPTION (0xc0000374) the first time this code ever actually ran (the
+    // Displays page was a stub with no real caller until it was wired up).
     [StructLayout(LayoutKind.Sequential)]
     public struct DisplayConfigPathTargetInfo
     {
@@ -335,9 +348,11 @@ internal static class NativeMethods
         public uint ModeInfoIdx;
         public DisplayConfigVideoOutputTechnology OutputTechnology;
         public DisplayConfigRotation Rotation;
-        public DisplayConfigRatioInfo ScalingPercentage;
-        public DisplayConfigPathInfoFlags RefreshRateMode;
-        public DisplayConfigPathInfoFlags StatusFlags;
+        public DisplayConfigScaling Scaling;
+        public Rational RefreshRate;
+        public DisplayConfigScanLineOrdering ScanLineOrdering;
+        public int TargetAvailable; // Win32 BOOL
+        public uint StatusFlags;
     }
 
     [StructLayout(LayoutKind.Sequential)]

@@ -30,7 +30,7 @@
                     <DataGridTextColumn Header="Devices" Binding="{Binding DeviceCount}" Width="80"/>
                     <DataGridTextColumn Header="Displays" Binding="{Binding DisplayCount}" Width="80"/>
                     <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="100"/>
-                    <DataGridCheckBoxColumn Header="Enabled" Binding="{Binding Enabled}" Width="70"/>
+                    <DataGridCheckBoxColumn Header="Enabled" Binding="{Binding Enabled, Mode=OneWay}" Width="70"/>
                 </DataGrid.Columns>
             </DataGrid>
         </Grid>

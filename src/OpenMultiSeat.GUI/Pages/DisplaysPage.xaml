@@ -29,7 +29,7 @@
                     <DataGridTextColumn Header="Resolution" Binding="{Binding Resolution}" Width="110"/>
                     <DataGridTextColumn Header="Refresh Rate" Binding="{Binding RefreshRateDisplay}" Width="100"/>
                     <DataGridTextColumn Header="Connection" Binding="{Binding ConnectionType}" Width="100"/>
-                    <DataGridCheckBoxColumn Header="Primary" Binding="{Binding IsPrimary}" Width="70"/>
+                    <DataGridCheckBoxColumn Header="Primary" Binding="{Binding IsPrimary, Mode=OneWay}" Width="70"/>
                     <DataGridTextColumn Header="Assigned To" Binding="{Binding AssignedSeatDisplay}" Width="150"/>
                 </DataGrid.Columns>
             </DataGrid>
