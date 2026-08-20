@@ -17,6 +17,7 @@
             <Button Content="Configure..." Click="OnConfigureSeat" Background="#2D6CDF" Foreground="White" Padding="12,8" Margin="0,0,10,0"/>
             <Button Content="User Account..." Click="OnUserAccount" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,0,10,0"/>
             <Button Content="Refresh" Click="OnRefresh" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,0,10,0"/>
+            <Button Content="View Settings..." Click="OnViewSettings" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,0,10,0"/>
             <TextBlock x:Name="StatusText" VerticalAlignment="Center" Foreground="#666666" FontSize="12"/>
         </StackPanel>
 

@@ -1,0 +1,35 @@
+<Window x:Class="OpenMultiSeat.GUI.Windows.WorkplaceTabSettingsWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Workplace Tab Settings" Height="280" Width="440"
+    Background="#1E1E1E" WindowStartupLocation="CenterOwner" ResizeMode="NoResize">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="Workplace Tab Settings" FontSize="18" FontWeight="Bold" Foreground="White" Margin="0,0,0,5"/>
+        <TextBlock Grid.Row="1" Text="Icon size and tile layout aren't modeled here — the Seats page is a list, not a tile view, so there's nothing for those ASTER options to control." Foreground="#888888" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,15"/>
+
+        <CheckBox x:Name="ShowUnassignedDisplaysCheckBox" Grid.Row="2" Content="Show displays not linked to any seat (Displays page)" Foreground="White" Margin="0,0,0,15"/>
+
+        <TextBlock Grid.Row="3" Text="Highlight newly detected devices for this many seconds (Devices page):" Foreground="#AAAAAA" FontSize="12" Margin="0,0,0,5" TextWrapping="Wrap"/>
+        <StackPanel Grid.Row="4" Orientation="Horizontal" Margin="0,0,0,10">
+            <Slider x:Name="HighlightSecondsSlider" Minimum="2" Maximum="20" Width="220" TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center"/>
+            <TextBlock x:Name="HighlightSecondsText" Foreground="White" FontSize="13" Margin="12,0,0,0" VerticalAlignment="Center" Width="30"/>
+        </StackPanel>
+
+        <TextBlock x:Name="ErrorText" Grid.Row="5" Foreground="#E06C75" FontSize="12" TextWrapping="Wrap" VerticalAlignment="Top" Visibility="Collapsed"/>
+
+        <StackPanel Grid.Row="6" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
+            <Button Content="Save" Click="OnSave" Background="#2D6CDF" Foreground="White" Padding="16,8" Margin="0,0,10,0" IsDefault="True"/>
+            <Button Content="Cancel" Click="OnCancel" Background="#3D3D3D" Foreground="White" Padding="16,8" IsCancel="True"/>
+        </StackPanel>
+    </Grid>
+</Window>

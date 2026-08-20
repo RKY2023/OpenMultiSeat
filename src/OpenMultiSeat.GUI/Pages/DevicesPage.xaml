@@ -22,6 +22,16 @@
 
         <DataGrid Grid.Row="2" x:Name="DevicesGrid" AutoGenerateColumns="False" IsReadOnly="True"
                   SelectionMode="Single" Background="White" BorderBrush="#CCCCCC">
+            <DataGrid.RowStyle>
+                <Style TargetType="DataGridRow">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsRecentlyAdded}" Value="True">
+                            <Setter Property="Background" Value="#FFF3CD"/>
+                            <Setter Property="ToolTip" Value="Newly detected (see Workplace Tab Settings on the Seats page)"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </DataGrid.RowStyle>
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Device Name" Binding="{Binding ProductName}" Width="220"/>
                 <DataGridTextColumn Header="Class" Binding="{Binding DeviceType}" Width="90"/>

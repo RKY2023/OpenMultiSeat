@@ -24,6 +24,7 @@ public partial class DevicesPage : Page
     private readonly IHidDeviceEnumerator _enumerator;
     private readonly IGeneralDeviceEnumerator _generalEnumerator;
     private readonly ISeatManager _seatManager;
+    private readonly IWorkplaceViewSettingsPersistence _viewSettingsPersistence;
     private IReadOnlyList<Seat> _seats = [];
 
     public DevicesPage()
@@ -35,6 +36,7 @@ public partial class DevicesPage : Page
         _generalEnumerator = new GeneralDeviceEnumerator(GuiLoggerFactory.Instance.CreateLogger<GeneralDeviceEnumerator>(), _persistence);
         var seatPersistence = new SeatPersistence(GuiLoggerFactory.Instance.CreateLogger<SeatPersistence>());
         _seatManager = new SeatManager(GuiLoggerFactory.Instance.CreateLogger<SeatManager>(), seatPersistence, _persistence);
+        _viewSettingsPersistence = new WorkplaceViewSettingsPersistence(GuiLoggerFactory.Instance.CreateLogger<WorkplaceViewSettingsPersistence>());
 
         Loaded += async (_, _) => await LoadFromRegistryAsync();
     }
@@ -43,6 +45,7 @@ public partial class DevicesPage : Page
     {
         var devices = await _persistence.GetAllDevicesAsync();
         _seats = await _seatManager.GetAllSeatsAsync();
+        var viewSettings = await _viewSettingsPersistence.LoadAsync();
 
         // ISeatManager has no "which seat owns this device" query — assignment truth lives on
         // each Seat's KeyboardIds/MouseIds/OtherDeviceIds lists, so build the reverse lookup here.
@@ -53,8 +56,12 @@ public partial class DevicesPage : Page
                 assignedTo[deviceId] = seat.Name;
         }
 
+        var now = DateTime.UtcNow;
         DevicesGrid.ItemsSource = devices
-            .Select(d => new DeviceRow(d, assignedTo.GetValueOrDefault(d.StableId)))
+            .Select(d => new DeviceRow(
+                d,
+                assignedTo.GetValueOrDefault(d.StableId),
+                WorkplaceViewSettings.IsRecentlyAdded(d.FirstSeen, now, viewSettings.NewDeviceHighlightSeconds)))
             .ToList();
 
         StatusText.Text = devices.Count == 0
@@ -167,8 +174,11 @@ public partial class DevicesPage : Page
     private static string CsvField(string? value)
         => $"\"{(value ?? string.Empty).Replace("\"", "\"\"")}\"";
 
-    /// <summary>Wraps a DeviceRecord with its resolved seat assignment for grid binding.</summary>
-    private sealed class DeviceRow(DeviceRecord device, string? assignedSeatName)
+    /// <summary>Wraps a DeviceRecord with its resolved seat assignment for grid binding.
+    /// <paramref name="isRecentlyAdded"/> drives the row-highlight DataTrigger in DevicesPage.xaml
+    /// — see WorkplaceViewSettings.IsRecentlyAdded and the "Workplace Tab Settings" window it's
+    /// configured from.</summary>
+    private sealed class DeviceRow(DeviceRecord device, string? assignedSeatName, bool isRecentlyAdded)
     {
         public DeviceRecord Device { get; } = device;
         public string? ProductName => Device.ProductName;
@@ -179,5 +189,6 @@ public partial class DevicesPage : Page
         public DateTime FirstSeen => Device.FirstSeen;
         public string? AssignedSeatName { get; } = assignedSeatName;
         public string AssignedSeatDisplay => AssignedSeatName ?? "(unassigned)";
+        public bool IsRecentlyAdded { get; } = isRecentlyAdded;
     }
 }

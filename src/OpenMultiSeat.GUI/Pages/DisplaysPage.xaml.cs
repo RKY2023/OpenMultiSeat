@@ -21,6 +21,7 @@ public partial class DisplaysPage : Page
 {
     private readonly IDisplayEnumerator _enumerator;
     private readonly ISeatManager _seatManager;
+    private readonly IWorkplaceViewSettingsPersistence _viewSettingsPersistence;
     private IReadOnlyList<Display> _displays = [];
     private IReadOnlyList<Seat> _seats = [];
 
@@ -32,6 +33,7 @@ public partial class DisplaysPage : Page
         var seatPersistence = new SeatPersistence(GuiLoggerFactory.Instance.CreateLogger<SeatPersistence>());
         var devicePersistence = new DevicePersistence(GuiLoggerFactory.Instance.CreateLogger<DevicePersistence>());
         _seatManager = new SeatManager(GuiLoggerFactory.Instance.CreateLogger<SeatManager>(), seatPersistence, devicePersistence);
+        _viewSettingsPersistence = new WorkplaceViewSettingsPersistence(GuiLoggerFactory.Instance.CreateLogger<WorkplaceViewSettingsPersistence>());
 
         Loaded += async (_, _) => await ScanAsync();
     }
@@ -40,6 +42,7 @@ public partial class DisplaysPage : Page
     {
         _displays = await _enumerator.EnumerateDisplaysAsync();
         _seats = await _seatManager.GetAllSeatsAsync();
+        var viewSettings = await _viewSettingsPersistence.LoadAsync();
 
         var assignedTo = new Dictionary<string, string>();
         foreach (var seat in _seats)
@@ -56,12 +59,22 @@ public partial class DisplaysPage : Page
             return;
         }
 
+        // "Show displays not linked to any seat" (Workplace Tab Settings — see
+        // docs/control-panel/workplace-tab-settings.md) hides unassigned rows when off.
+        var visibleDisplays = viewSettings.ShowUnassignedDisplays
+            ? _displays
+            : _displays.Where(d => assignedTo.ContainsKey(d.DisplayId)).ToList();
+
         EmptyStateText.Visibility = Visibility.Collapsed;
         DisplaysGrid.Visibility = Visibility.Visible;
-        DisplaysGrid.ItemsSource = _displays
+        DisplaysGrid.ItemsSource = visibleDisplays
             .Select(d => new DisplayRow(d, assignedTo.GetValueOrDefault(d.DisplayId)))
             .ToList();
-        StatusText.Text = $"{_displays.Count} display(s) detected.";
+
+        var hiddenCount = _displays.Count - visibleDisplays.Count;
+        StatusText.Text = hiddenCount == 0
+            ? $"{_displays.Count} display(s) detected."
+            : $"{visibleDisplays.Count} of {_displays.Count} display(s) shown ({hiddenCount} unassigned hidden — see View Settings on the Seats page).";
     }
 
     private async void OnScanDisplays(object sender, RoutedEventArgs e)

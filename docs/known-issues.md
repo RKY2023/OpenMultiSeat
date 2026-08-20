@@ -2,7 +2,7 @@
 
 ## GUI: former stub pages, and what replaced them
 
-**Status:** Devices, Seats, Displays, Assign CPU Cores, Audio, and (most recently) Input Isolation have all been wired to real backends (see below). The remaining gaps are narrower: Workplace Tab Settings is still a stub, and there's no single-step reassignment/move between seats — see the bottom of this file.
+**Status:** every originally-stub GUI page (Devices, Seats, Displays, Assign CPU Cores, Audio, Input Isolation, and now Workplace Tab Settings) has been wired to real backends (see below). What's left is narrower — pieces of individual pages, not whole unwired pages — see the bottom of this file.
 
 **Found by:** launching the built `OpenMultiSeat.GUI.exe` and screenshotting each nav page — originally every page but About/Dashboard rendered as a page title, a one-line static description, and a single button whose *only* behavior was to pop a generic `MessageBox.Show("Configure <X>")` info dialog, repeating the button's own label back at the user and doing nothing else. Each has since been fixed in follow-up work; see their own status rows below rather than the original screenshots, which now describe a stale state.
 
@@ -22,6 +22,8 @@ Making At System Startup actually work (it runs as `SYSTEM`) required switching 
 
 **Reassignment now has a real confirm step, closing most of the "Confirm Device Destination" gap.** Every "Assign to Seat…" flow (Devices, Displays, Audio, System page) detects when the picked resource is already assigned to a *different* seat and shows a new `ConfirmDeviceDestinationWindow` (resource name, current seat, new seat, Move/Cancel) before actually moving it — only on confirmation does the GUI call `UnassignXFromSeatAsync` then `AssignXToSeatAsync`. Assigning an unassigned resource, or "reassigning" to the seat it's already on, skips the prompt (nothing to confirm). See [Confirm Device Destination](control-panel/confirm-device-destination.md) for what ASTER's own drag-and-drop/batched-table version still has that this doesn't.
 
+**Workplace Tab Settings is now wired too**, closing the last of the six originally-fully-stub pages — a new "View Settings…" button on the Seats page opens a real `WorkplaceTabSettingsWindow`, backed by a new `WorkplaceViewSettings` record (`view-settings.json`). Two of ASTER's options have a real equivalent given the Seats page is a list, not a tile layout: "show unlinked displays" (a real filter on the Displays grid) and the 2–20 second "highlight newly detected devices" slider (a real row highlight on the Devices grid, driven by `DeviceRecord.FirstSeen`, recomputed each load/refresh rather than a live timer). Icon size and tile distribution have nothing to control without a tile layout, and "show devices shared across workplaces" has no equivalent since assignment is exclusive-only — see [Workplace Tab Settings](control-panel/workplace-tab-settings.md) for the full breakdown.
+
 | Page | Real backend exists? | GUI wired to it? |
 |---|---|---|
 | Devices | ✅ `OpenMultiSeat.Devices` | ✅ Yes |
@@ -37,6 +39,8 @@ Making At System Startup actually work (it runs as `SYSTEM`) required switching 
 | Credential-based process launch | ✅ `SessionManager.LaunchProcessWithCredentialsAsync` (`CreateProcessWithLogonW`), verified | ✅ Yes — "Test Launch…" on the User Account dialog; not wired to automatic seat start |
 | Workplace Start Mode (Manual/At System Startup/Via Workplace 1) | ✅ `WindowsStartupTriggerManager` + `SeatStartupOrchestrator` | ✅ Yes — dropdown + "Start Workplaces Now" on the Settings page; seat passwords use DPAPI LocalMachine scope (disclosed trade-off, not a bug — see above) so SYSTEM can decrypt them |
 | Input Isolation (bind/unbind, enable/disable, validate) | ✅ `OpenMultiSeat.InputIsolation.InputIsolationService` | ✅ Yes — no hotkey-rebind UI though, see [Input Devices Switch](control-panel/input-devices-switch.md) |
+| Confirm Device Destination (before/after move confirm) | ✅ `ConfirmDeviceDestinationWindow`, used by every Assign flow | ✅ Yes — no drag-and-drop or batched table, see [Confirm Device Destination](control-panel/confirm-device-destination.md) |
+| Workplace Tab Settings (unlinked-displays filter, new-device highlight) | ✅ `WorkplaceViewSettings` + `WorkplaceViewSettingsPersistence` | ✅ Yes — "View Settings…" on the Seats page; no icon size/tile distribution, see [Workplace Tab Settings](control-panel/workplace-tab-settings.md) |
 
 Fixed alongside device assignment: `SeatManager`'s in-memory "already assigned elsewhere" guard (`_deviceToSeatMap`) was never rebuilt from persisted seat data — only populated by assignment calls made within the same `SeatManager` instance's own lifetime. Since the GUI constructs a fresh `SeatManager` per page load, this silently defeated the exclusivity check entirely; a device could be assigned to two seats at once with no error. `GetAllSeatsAsync` now rebuilds the map from each seat's `KeyboardIds`/`MouseIds` on every load. The same class of map (`_displayToSeatMap`) was added correctly from the start when display assignment was built. Both covered by `tests/OpenMultiSeat.Tests/SeatManagerTests.cs`. `OpenMultiSeat.Audio`'s `AudioManager` did **not** have this bug — its duplicate-assignment guard is reloaded from persistence on every call, not just within one instance's lifetime, so it needed no equivalent fix.
 
@@ -65,10 +69,12 @@ The original Devices/Seats/Displays/Audio/Input-Isolation screenshots (`images/s
 - `src/OpenMultiSeat.GUI/Pages/SettingsPage.xaml(.cs)` — ✅ real, Workplace Start Mode dropdown + "Start Workplaces Now"
 - `src/OpenMultiSeat.GUI/Pages/InputPage.xaml(.cs)` — ✅ real, bind/unbind + isolation toggle + validate, via `InputIsolationService`
 - `src/OpenMultiSeat.GUI/Windows/ConfirmDeviceDestinationWindow.xaml(.cs)` — ✅ real, before/after move confirm, used by all four Assign* windows and SystemPage
+- `src/OpenMultiSeat.Core/WorkplaceViewSettings.cs`, `WorkplaceViewSettingsPersistence.cs` — ✅ real, unlinked-displays filter + new-device highlight window
+- `src/OpenMultiSeat.GUI/Windows/WorkplaceTabSettingsWindow.xaml(.cs)` — ✅ real, "View Settings…" on the Seats page
 
 ### What's still not real (see the matching [control-panel](control-panel/README.md) page for the ASTER-equivalent UX each should aim for)
 
 - **Input Isolation's hotkey-rebind UI specifically** — ASTER's window is a single "press a key combination" capture field for switching a device's active seat at runtime; `InputIsolationService` has no hotkey concept, so binding here is a persistent config change, not a live switch. See [Input Devices Switch](control-panel/input-devices-switch.md).
-- **Workplace Tab Settings** — still a `MessageBox` stub; see [Workplace Tab Settings](control-panel/workplace-tab-settings.md).
 - **Confirm Device Destination's drag-and-drop and batched multi-device table** — the move confirm itself is real now (see above), but it's still a dropdown-driven, one-resource-at-a-time flow, not drag-and-drop with a per-row-checkbox table. See [Confirm Device Destination](control-panel/confirm-device-destination.md).
+- **Workplace Tab Settings' icon size / tile distribution / "shared across workplaces" options** — no tile layout exists to size or distribute, and assignment is exclusive-only so there's no "shared" concept yet; see [Workplace Tab Settings](control-panel/workplace-tab-settings.md).
 - **Unifying the two "which seat owns this keyboard/mouse" stores** — `SeatManager.AssignDeviceToSeatAsync` (`Seat.KeyboardIds`/`MouseIds`) and `InputIsolationService.BindDeviceToSeatAsync` (`input-bindings.json`) are independent and can disagree; see the Input Isolation section above.

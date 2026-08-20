@@ -22,6 +22,7 @@ public partial class SeatsPage : Page
     private readonly IDevicePersistence _devicePersistence;
     private readonly IDisplayEnumerator _displayEnumerator;
     private readonly IAudioManager _audioManager;
+    private readonly IWorkplaceViewSettingsPersistence _viewSettingsPersistence;
     private IReadOnlyList<Seat> _seats = [];
 
     public SeatsPage()
@@ -33,6 +34,7 @@ public partial class SeatsPage : Page
         _seatManager = new SeatManager(
             GuiLoggerFactory.Instance.CreateLogger<SeatManager>(), seatPersistence, _devicePersistence);
         _displayEnumerator = new DisplayEnumerator(GuiLoggerFactory.Instance.CreateLogger<DisplayEnumerator>());
+        _viewSettingsPersistence = new WorkplaceViewSettingsPersistence(GuiLoggerFactory.Instance.CreateLogger<WorkplaceViewSettingsPersistence>());
 
         var audioEnumerator = new AudioDeviceEnumerator(GuiLoggerFactory.Instance.CreateLogger<AudioDeviceEnumerator>());
         var audioPersistence = new AudioPersistence(GuiLoggerFactory.Instance.CreateLogger<AudioPersistence>());
@@ -129,6 +131,16 @@ public partial class SeatsPage : Page
         };
         window.ShowDialog();
         await LoadAsync();
+    }
+
+    private async void OnViewSettings(object sender, RoutedEventArgs e)
+    {
+        var current = await _viewSettingsPersistence.LoadAsync();
+        var window = new WorkplaceTabSettingsWindow(_viewSettingsPersistence, current)
+        {
+            Owner = Window.GetWindow(this)
+        };
+        window.ShowDialog();
     }
 
     private void OnSeatsGridDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
