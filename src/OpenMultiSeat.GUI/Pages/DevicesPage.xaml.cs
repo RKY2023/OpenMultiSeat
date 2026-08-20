@@ -6,20 +6,23 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Win32;
 using OpenMultiSeat.Core;
 using OpenMultiSeat.Devices;
+using OpenMultiSeat.GUI.Windows;
 
 namespace OpenMultiSeat.GUI.Pages;
 
 /// <summary>
 /// Reads and writes the real device registry directly through IDevicePersistence /
-/// IHidDeviceEnumerator — the same pattern used by AssignCpuCoresWindow, since no
-/// GUI page has IPC wiring to the Service today. Previously this page's buttons only
-/// popped a MessageBox and DevicesGrid.ItemsSource was never set, despite the XAML
-/// looking fully built out.
+/// IHidDeviceEnumerator, and now also seat assignment via ISeatManager — the same direct-
+/// persistence pattern used by SeatsPage/AssignCpuCoresWindow, since no GUI page has IPC wiring
+/// to the Service today. Previously this page's buttons only popped a MessageBox and
+/// DevicesGrid.ItemsSource was never set, despite the XAML looking fully built out.
 /// </summary>
 public partial class DevicesPage : Page
 {
     private readonly IDevicePersistence _persistence;
     private readonly IHidDeviceEnumerator _enumerator;
+    private readonly ISeatManager _seatManager;
+    private IReadOnlyList<Seat> _seats = [];
 
     public DevicesPage()
     {
@@ -27,6 +30,8 @@ public partial class DevicesPage : Page
 
         _persistence = new DevicePersistence(GuiLoggerFactory.Instance.CreateLogger<DevicePersistence>());
         _enumerator = new HidDeviceEnumerator(GuiLoggerFactory.Instance.CreateLogger<HidDeviceEnumerator>(), _persistence);
+        var seatPersistence = new SeatPersistence(GuiLoggerFactory.Instance.CreateLogger<SeatPersistence>());
+        _seatManager = new SeatManager(GuiLoggerFactory.Instance.CreateLogger<SeatManager>(), seatPersistence, _persistence);
 
         Loaded += async (_, _) => await LoadFromRegistryAsync();
     }
@@ -34,7 +39,21 @@ public partial class DevicesPage : Page
     private async Task LoadFromRegistryAsync()
     {
         var devices = await _persistence.GetAllDevicesAsync();
-        DevicesGrid.ItemsSource = devices;
+        _seats = await _seatManager.GetAllSeatsAsync();
+
+        // ISeatManager has no "which seat owns this device" query — assignment truth lives on
+        // each Seat's KeyboardIds/MouseIds lists, so build the reverse lookup here.
+        var assignedTo = new Dictionary<string, string>();
+        foreach (var seat in _seats)
+        {
+            foreach (var deviceId in seat.KeyboardIds.Concat(seat.MouseIds))
+                assignedTo[deviceId] = seat.Name;
+        }
+
+        DevicesGrid.ItemsSource = devices
+            .Select(d => new DeviceRow(d, assignedTo.GetValueOrDefault(d.StableId)))
+            .ToList();
+
         StatusText.Text = devices.Count == 0
             ? "No devices registered yet — click Scan Devices."
             : $"{devices.Count} device(s) in registry.";
@@ -52,6 +71,49 @@ public partial class DevicesPage : Page
 
     private async void OnRefresh(object sender, RoutedEventArgs e)
     {
+        await LoadFromRegistryAsync();
+    }
+
+    private async void OnAssignToSeat(object sender, RoutedEventArgs e)
+    {
+        if (DevicesGrid.SelectedItem is not DeviceRow row)
+        {
+            MessageBox.Show("Select a device to assign first.", "Devices", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        if (_seats.Count == 0)
+        {
+            MessageBox.Show("No seats exist yet. Create one on the Seats page first.", "Devices", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var window = new AssignDeviceToSeatWindow(_seatManager, row.Device, _seats)
+        {
+            Owner = Window.GetWindow(this)
+        };
+
+        if (window.ShowDialog() == true)
+        {
+            await LoadFromRegistryAsync();
+        }
+    }
+
+    private async void OnUnassign(object sender, RoutedEventArgs e)
+    {
+        if (DevicesGrid.SelectedItem is not DeviceRow row)
+        {
+            MessageBox.Show("Select a device to unassign first.", "Devices", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        if (row.AssignedSeatName == null)
+        {
+            MessageBox.Show("This device isn't assigned to a seat.", "Devices", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        await _seatManager.UnassignDeviceFromSeatAsync(row.Device.StableId);
         await LoadFromRegistryAsync();
     }
 
@@ -93,4 +155,17 @@ public partial class DevicesPage : Page
 
     private static string CsvField(string? value)
         => $"\"{(value ?? string.Empty).Replace("\"", "\"\"")}\"";
+
+    /// <summary>Wraps a DeviceRecord with its resolved seat assignment for grid binding.</summary>
+    private sealed class DeviceRow(DeviceRecord device, string? assignedSeatName)
+    {
+        public DeviceRecord Device { get; } = device;
+        public string? ProductName => Device.ProductName;
+        public string? HardwareId => Device.HardwareId;
+        public string? VendorId => Device.VendorId;
+        public string? ProductId => Device.ProductId;
+        public DateTime FirstSeen => Device.FirstSeen;
+        public string? AssignedSeatName { get; } = assignedSeatName;
+        public string AssignedSeatDisplay => AssignedSeatName ?? "(unassigned)";
+    }
 }

@@ -94,6 +94,18 @@ public class SeatManager : ISeatManager
         foreach (var seat in persisted)
         {
             _seats[seat.Id] = seat;
+
+            // _deviceToSeatMap only ever grows via AssignDeviceToSeatAsync calls made within
+            // this instance's own lifetime — it isn't otherwise derived from persisted state.
+            // A fresh SeatManager (e.g. one instantiated per GUI page load) would start with an
+            // empty map even though seats.json already has real assignments on disk, silently
+            // defeating AssignDeviceToSeatAsync's "already assigned elsewhere" check and letting
+            // the same device end up in two seats' KeyboardIds/MouseIds. Rebuild it here so any
+            // call that loads seats keeps the map in sync with what's actually persisted.
+            foreach (var deviceId in seat.KeyboardIds.Concat(seat.MouseIds))
+            {
+                _deviceToSeatMap[deviceId] = seat.Id;
+            }
         }
         return persisted;
     }

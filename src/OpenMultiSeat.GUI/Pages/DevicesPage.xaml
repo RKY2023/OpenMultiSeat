@@ -15,15 +15,19 @@
             <Button Content="Scan Devices" Click="OnScanDevices" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,0,10,0"/>
             <Button Content="Refresh" Click="OnRefresh" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,0,10,0"/>
             <Button Content="Export Report" Click="OnExportReport" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,0,10,0"/>
+            <Button Content="Assign to Seat..." Click="OnAssignToSeat" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,0,10,0"/>
+            <Button Content="Unassign" Click="OnUnassign" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,0,10,0"/>
             <TextBlock x:Name="StatusText" VerticalAlignment="Center" Foreground="#666666" FontSize="12"/>
         </StackPanel>
 
-        <DataGrid Grid.Row="2" x:Name="DevicesGrid" AutoGenerateColumns="False" IsReadOnly="True" Background="White" BorderBrush="#CCCCCC">
+        <DataGrid Grid.Row="2" x:Name="DevicesGrid" AutoGenerateColumns="False" IsReadOnly="True"
+                  SelectionMode="Single" Background="White" BorderBrush="#CCCCCC">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="Device Name" Binding="{Binding ProductName}" Width="250"/>
-                <DataGridTextColumn Header="Hardware ID" Binding="{Binding HardwareId}" Width="200"/>
-                <DataGridTextColumn Header="Vendor ID" Binding="{Binding VendorId}" Width="100"/>
-                <DataGridTextColumn Header="Product ID" Binding="{Binding ProductId}" Width="100"/>
+                <DataGridTextColumn Header="Device Name" Binding="{Binding ProductName}" Width="220"/>
+                <DataGridTextColumn Header="Hardware ID" Binding="{Binding HardwareId}" Width="170"/>
+                <DataGridTextColumn Header="Vendor ID" Binding="{Binding VendorId}" Width="90"/>
+                <DataGridTextColumn Header="Product ID" Binding="{Binding ProductId}" Width="90"/>
+                <DataGridTextColumn Header="Assigned To" Binding="{Binding AssignedSeatDisplay}" Width="150"/>
                 <DataGridTextColumn Header="First Seen" Binding="{Binding FirstSeen}" Width="150"/>
             </DataGrid.Columns>
         </DataGrid>
