@@ -114,14 +114,11 @@ async Task ListDevices()
         {
             var status = device.IsConnected ? "Connected" : "Disconnected";
             var default_ = device.IsDefault ? " [DEFAULT]" : "";
-            var mute = device.IsMuted ? "[MUTED]" : "";
 
-            logger.LogInformation($"► {device.DeviceName}{default_}");
+            logger.LogInformation($"► {device.FriendlyName}{default_}");
             logger.LogInformation($"  ID: {device.DeviceId}");
-            logger.LogInformation($"  Type: {device.DeviceType}");
-            logger.LogInformation($"  Role: {device.DeviceRole}");
-            logger.LogInformation($"  Status: {status} {mute}");
-            logger.LogInformation($"  Volume: {device.Volume}%");
+            logger.LogInformation($"  Type: {device.Type}");
+            logger.LogInformation($"  Status: {status}");
             logger.LogInformation("");
         }
     }
@@ -155,7 +152,7 @@ async Task ListSeats()
             {
                 foreach (var device in devices)
                 {
-                    logger.LogInformation($"    • {device.DeviceName} ({device.DeviceRole})");
+                    logger.LogInformation($"    • {device.FriendlyName} ({device.Type})");
                 }
             }
         }
@@ -226,10 +223,8 @@ async Task GetSeatDevices()
 
         foreach (var device in devices)
         {
-            logger.LogInformation($"  • {device.DeviceName}");
-            logger.LogInformation($"    Type: {device.DeviceType}");
-            logger.LogInformation($"    Role: {device.DeviceRole}");
-            logger.LogInformation($"    Volume: {device.Volume}%");
+            logger.LogInformation($"  • {device.FriendlyName}");
+            logger.LogInformation($"    Type: {device.Type}");
         }
     }
     catch (Exception ex)
@@ -274,7 +269,7 @@ async Task ViewTopology()
         foreach (var device in topology.DeviceList.OrderBy(d => d.DeviceId))
         {
             var status = device.IsConnected ? "✓" : "✗";
-            logger.LogInformation($"  {status} {device.DeviceName} ({device.DeviceType})");
+            logger.LogInformation($"  {status} {device.FriendlyName} ({device.Type})");
         }
     }
     catch (Exception ex)

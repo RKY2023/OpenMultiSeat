@@ -302,7 +302,7 @@ public class InputIsolationService : IInputIsolationService
         };
     }
 
-    private InputDeviceType DetermineDeviceType(Device device)
+    private InputDeviceType DetermineDeviceType(DeviceRecord device)
     {
         var name = (device.ProductName ?? "").ToLower();
 

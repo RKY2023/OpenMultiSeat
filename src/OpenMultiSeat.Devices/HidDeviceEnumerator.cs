@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using OpenMultiSeat.Core;
 using System.Runtime.InteropServices;
 using System.Text;

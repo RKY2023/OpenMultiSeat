@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -78,8 +79,7 @@ public class SessionEnumerator : ISessionEnumerator
                 for (int i = 0; i < sessionCount; i++)
                 {
                     IntPtr sessionPtr = new IntPtr(sessionEnumHandle.ToInt64() + (i * structSize));
-                    sessionInfo[i] = Marshal.PtrToStructure<NativeMethods.WtsSessionInfo>(sessionPtr) ??
-                        new NativeMethods.WtsSessionInfo();
+                    sessionInfo[i] = Marshal.PtrToStructure<NativeMethods.WtsSessionInfo>(sessionPtr);
 
                     var session = GetSessionDetails(sessionInfo[i]);
                     if (session != null)

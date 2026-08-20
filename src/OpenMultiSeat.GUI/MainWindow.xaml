@@ -4,9 +4,9 @@
     Title="OpenMultiSeat Administration Console" Height="700" Width="1000" WindowStartupLocation="CenterScreen">
     <DockPanel>
         <!-- Title Bar -->
-        <StackPanel DockPanel.Dock="Top" Background="#2D2D2D" Padding="15">
+        <StackPanel DockPanel.Dock="Top" Background="#2D2D2D" Margin="15">
             <TextBlock Text="OpenMultiSeat Administration Console" Foreground="White" FontSize="20" FontWeight="Bold"/>
-            <TextBlock Text="System Configuration & Management" Foreground="#CCCCCC" FontSize="12" Margin="0,5,0,0"/>
+            <TextBlock Text="System Configuration &amp; Management" Foreground="#CCCCCC" FontSize="12" Margin="0,5,0,0"/>
         </StackPanel>
 
         <!-- Status Bar -->
@@ -24,8 +24,8 @@
             </Grid.ColumnDefinitions>
 
             <!-- Left Navigation -->
-            <StackPanel Grid.Column="0" Background="#F5F5F5" Padding="0">
-                <StackPanel Background="#2D2D2D" Padding="15">
+            <StackPanel Grid.Column="0" Background="#F5F5F5" Margin="0">
+                <StackPanel Background="#2D2D2D" Margin="15">
                     <TextBlock Text="Configuration" Foreground="White" FontSize="14" FontWeight="Bold"/>
                 </StackPanel>
                 <Button x:Name="DashboardBtn" Content="Dashboard" Click="OnNavigateDashboard"

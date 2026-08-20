@@ -1,12 +1,8 @@
+using Microsoft.Extensions.Logging;
 using OpenMultiSeat.Core;
 using System.Runtime.InteropServices;
 
 namespace OpenMultiSeat.Displays;
-
-public interface IDisplayEnumerator
-{
-    Task<IReadOnlyList<Display>> EnumerateDisplaysAsync();
-}
 
 public class DisplayEnumerator : IDisplayEnumerator
 {

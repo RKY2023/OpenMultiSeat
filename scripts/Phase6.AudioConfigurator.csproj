@@ -10,6 +10,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Program.cs" />
+    <Compile Remove="Phase1DeviceTester.cs" />
+    <Compile Remove="Phase2SeatConfigurator.cs" />
+    <Compile Remove="Phase3SessionTester.cs" />
+    <Compile Remove="Phase4DisplayConfigurator.cs" />
+    <Compile Remove="Phase5InputIsolationTester.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="../src/OpenMultiSeat.Core/OpenMultiSeat.Core.csproj" />
     <ProjectReference Include="../src/OpenMultiSeat.Audio/OpenMultiSeat.Audio.csproj" />
   </ItemGroup>

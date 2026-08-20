@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -195,7 +196,7 @@ public static class ProcessLauncher
         string? workingDirectory = null)
     {
         // Get session token
-        if (!NativeMethods.WtsQueryUserToken(sessionId, out var userToken))
+        if (!ProcessNativeMethods.WtsQueryUserToken(sessionId, out var userToken))
         {
             throw new InvalidOperationException(
                 $"Failed to get user token for session {sessionId}: {Marshal.GetLastWin32Error()}");
@@ -204,7 +205,7 @@ public static class ProcessLauncher
         try
         {
             // Create environment block for the user
-            if (!NativeMethods.CreateEnvironmentBlock(out var envBlock, userToken, false))
+            if (!ProcessNativeMethods.CreateEnvironmentBlock(out var envBlock, userToken, false))
             {
                 throw new InvalidOperationException(
                     $"Failed to create environment block: {Marshal.GetLastWin32Error()}");
@@ -212,9 +213,9 @@ public static class ProcessLauncher
 
             try
             {
-                var startInfo = new NativeMethods.STARTUPINFO
+                var startInfo = new ProcessNativeMethods.STARTUPINFO
                 {
-                    cb = (uint)Marshal.SizeOf<NativeMethods.STARTUPINFO>(),
+                    cb = (uint)Marshal.SizeOf<ProcessNativeMethods.STARTUPINFO>(),
                     lpDesktop = "winsta0\\default"
                 };
 
@@ -222,16 +223,16 @@ public static class ProcessLauncher
                 if (!string.IsNullOrEmpty(arguments))
                     cmdLine += $" {arguments}";
 
-                var processInfo = new NativeMethods.PROCESS_INFORMATION();
+                var processInfo = new ProcessNativeMethods.PROCESS_INFORMATION();
 
-                var success = NativeMethods.CreateProcessAsUser(
+                var success = ProcessNativeMethods.CreateProcessAsUser(
                     userToken,
                     executablePath,
                     cmdLine,
                     IntPtr.Zero,
                     IntPtr.Zero,
                     false,
-                    (uint)(NativeMethods.CREATE_NEW_CONSOLE | NativeMethods.CREATE_UNICODE_ENVIRONMENT),
+                    (uint)(ProcessNativeMethods.CREATE_NEW_CONSOLE | ProcessNativeMethods.CREATE_UNICODE_ENVIRONMENT),
                     envBlock,
                     workingDirectory ?? Path.GetDirectoryName(executablePath),
                     ref startInfo,
@@ -245,26 +246,26 @@ public static class ProcessLauncher
 
                 // Close process and thread handles
                 if (processInfo.hProcess != IntPtr.Zero)
-                    NativeMethods.CloseHandle(processInfo.hProcess);
+                    ProcessNativeMethods.CloseHandle(processInfo.hProcess);
                 if (processInfo.hThread != IntPtr.Zero)
-                    NativeMethods.CloseHandle(processInfo.hThread);
+                    ProcessNativeMethods.CloseHandle(processInfo.hThread);
 
                 return processInfo.dwProcessId;
             }
             finally
             {
                 if (envBlock != IntPtr.Zero)
-                    NativeMethods.DestroyEnvironmentBlock(envBlock);
+                    ProcessNativeMethods.DestroyEnvironmentBlock(envBlock);
             }
         }
         finally
         {
-            NativeMethods.CloseHandle(userToken);
+            ProcessNativeMethods.CloseHandle(userToken);
         }
     }
 }
 
-internal static class NativeMethods
+internal static class ProcessNativeMethods
 {
     public const uint CREATE_NEW_CONSOLE = 0x00000010;
     public const uint CREATE_UNICODE_ENVIRONMENT = 0x00000400;
@@ -332,7 +333,4 @@ internal static class NativeMethods
 
     [DllImport("kernel32.dll", SetLastError = true)]
     public static extern bool CloseHandle(IntPtr hObject);
-
-    [DllImport("wtsapi32.dll", SetLastError = true)]
-    public static extern uint WtsGetActiveConsoleSessionId();
 }
