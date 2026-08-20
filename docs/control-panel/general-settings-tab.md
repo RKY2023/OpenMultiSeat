@@ -8,11 +8,15 @@ The General Settings tab groups configuration into three areas: **Windows Settin
 
 ## OpenMultiSeat status
 
-**✅ Implemented** — maps to the Settings page reachable from the main window's left nav.
+**🚧 Partially implemented** — maps to the Settings page reachable from the main window's left nav.
 
-OpenMultiSeat's Settings page covers the application-level equivalent of ASTER Settings — enabling/starting the multi-seat service and choosing how seat sessions come up — without the parts of ASTER's tab that don't apply to OpenMultiSeat's design:
+Only one piece of this page is real: **"Assign CPU Cores…"**, which opens the working `AssignCpuCoresWindow` (see [Assign CPU Cores](assign-cpu-cores.md)). Everything else ASTER Settings covers — the service enable/start toggle, and specifically **how workplaces start** (manually via a button / automatically at system startup / automatically at first login) — has no equivalent yet. The page's other button, **"Configure Settings…"**, is a bare stub: it pops a `MessageBox.Show("Configure Settings")` and does nothing else, the same non-functional-placeholder pattern the Input Isolation page has (see [Known Issues](../known-issues.md)).
 
+Concretely, that means:
+
+- **No seat-startup-mode setting exists anywhere in the model or GUI** — no `manual`/`at system startup`/`at first login` field on `Seat` or elsewhere, and nothing governs *when* a seat's session comes up. Today the only way to start a seat's session at all is the manual, one-off "Test Launch…" button on the [User Account](user-account-for-workstation.md) dialog (added this round) — there is no automatic trigger of any kind, system-startup or otherwise.
+- **[Confirming Starting of Workplaces](confirming-starting-of-workplaces.md)** (the "do you want to start workplaces now?" prompt ASTER shows on manual-startup boot) remains unbuilt for the same reason — it has nothing to gate, since there's no startup-mode setting or automatic startup path yet.
 - No **Windows Settings** shortcuts for Proxy/Device Manager/virtual-NIC creation — OpenMultiSeat doesn't hand out per-workplace IP addresses; it targets local seats (keyboard/mouse/monitor/audio sets) on one physical PC rather than networked workplaces.
 - No **ASTER Activation Settings** group — see [Activation Dialog](activation-dialog.md); OpenMultiSeat has no licensing or activation system.
 
-The seat-startup-mode concept (manual / at system startup / at first login) is the closest parallel to work still ahead — it would govern when `OpenMultiSeat.Sessions`' `SessionManager` brings up each seat's session and pairs with the not-yet-built [Confirming Starting of Workplaces](confirming-starting-of-workplaces.md) dialog. See [Known Issues](../known-issues.md) for the current state of Settings-page functionality.
+Building the startup-mode setting for real would mean: a persisted mode field (on `Seat` or a machine-wide setting), a way to trigger `SessionManager`/`ProcessLauncher` at actual Windows startup (a scheduled task or a Windows service entry point — `OpenMultiSeat.Service` exists as a project but doesn't do this today) or at first login (a logon-triggered hook), and the confirmation dialog above gating the manual-start path. None of that exists yet.
