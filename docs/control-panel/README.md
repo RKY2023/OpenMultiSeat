@@ -16,7 +16,7 @@ Each page states **what ASTER's equivalent does**, then **OpenMultiSeat's status
 | Page | ASTER equivalent | Status |
 |---|---|---|
 | [Main Window of ASTER Control Panel](aster-control-panel-main-window.md) | Main window | ✅ Implemented |
-| ["General Settings" Tab](general-settings-tab.md) | General Settings tab | 🚧 Partial — only "Assign CPU Cores…" is real; "Configure Settings…" is a no-op stub, and no seat-startup-mode (manual/at system startup/at first login) setting exists anywhere yet |
+| ["General Settings" Tab](general-settings-tab.md) | General Settings tab | 🚧 Partial — "Assign CPU Cores…" and a real Workplace Start Mode setting (Manual/At System Startup/Via Workplace 1, wired to real Windows Scheduled Tasks) plus "Start Workplaces Now" are real; At System Startup currently can't decrypt DPAPI-CurrentUser-protected seat passwords running as SYSTEM (see the page for the caveat) |
 | ["Workplaces" Tab](workplaces-tab.md) | Workplaces tab | 🚧 Partial — seat list/create/delete, account config, and device/display/audio assignment all real, with both a per-seat "Configure…" view and a shared cross-seat **System** page |
 | ["About" Tab](about-tab.md) | About tab | ✅ Implemented |
 
@@ -44,7 +44,7 @@ Each page states **what ASTER's equivalent does**, then **OpenMultiSeat's status
 | ["Input Devices Switch" Window](input-devices-switch.md) | Input Devices Switch | 🚧 Stub |
 | ["IP Address for the Workplace" Window](ip-address-for-workplace.md) | IP Address for the Workplace | 📋 Planned |
 | ["Applications and Folders" Window](applications-and-folders.md) | Applications and Folders | 📋 Planned |
-| [Confirming Starting of Workplaces Window](confirming-starting-of-workplaces.md) | Confirming Starting of Workplaces | 📋 Planned |
+| [Confirming Starting of Workplaces Window](confirming-starting-of-workplaces.md) | Confirming Starting of Workplaces | 🚧 Partial — a real Yes/No confirm gates the manual "Start Workplaces Now" button; no automatic boot-time prompt or "don't ask again" |
 | ["Experimental Settings" Window](experimental-settings.md) | Experimental Settings | 📋 Planned |
 | ["Assign CPU Cores" Window](assign-cpu-cores.md) | Assign CPU Cores | ✅ Implemented |
 | ["Set Log Verbosity" Window](log-verbosity.md) | Set Log Verbosity | 📋 Planned |
@@ -62,6 +62,6 @@ Each page states **what ASTER's equivalent does**, then **OpenMultiSeat's status
 ## Status summary
 
 - **3 pages fully implemented** (Main Window, About tab, Assign CPU Cores)
-- **7 pages are stubs or partially wired** — real backend exists; Workplaces tab, Devices to Workplace(s) Assignment, Assigning Video Outputs, and User Account for Workstation now have real seat CRUD, device/display/audio assignment, and account configuration, but General Settings tab (only CPU Cores is real), Workplace Tab Settings, and Input Devices Switch (and Confirm Device Destination, now Planned) remain unwired (see [Known Issues](../known-issues.md))
-- **9 pages are planned**, no implementation yet
+- **8 pages are stubs or partially wired** — real backend exists; Workplaces tab, Devices to Workplace(s) Assignment, Assigning Video Outputs, and User Account for Workstation now have real seat CRUD, device/display/audio assignment, and account configuration; General Settings tab now has a real Workplace Start Mode setting wired to genuine Windows Scheduled Tasks (with a disclosed DPAPI/SYSTEM limitation under At System Startup) alongside CPU Cores; Confirming Starting of Workplaces has a real manual-trigger confirm; Workplace Tab Settings and Input Devices Switch (and Confirm Device Destination, now Planned) remain unwired (see [Known Issues](../known-issues.md))
+- **8 pages are planned**, no implementation yet
 - **9 pages don't apply today** — 7 pure licensing/activation pages plus Proxy Server Setup and Support Request, which currently have no OpenMultiSeat need but could become planned items later (see [`../user-manual/licensing-model.md`](../user-manual/licensing-model.md))

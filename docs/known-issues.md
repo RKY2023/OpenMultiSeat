@@ -18,6 +18,8 @@ A new **System** page (top-level nav) lists every device/display/audio endpoint 
 
 Credential-based process launching is real and verified: `ISessionManager.LaunchProcessWithCredentialsAsync` wraps `CreateProcessWithLogonW` (the mechanism behind Explorer's "Run as different user"), reachable via a "Test Launch (Notepad)…" button on the User Account dialog. Verified against the real API — correct credentials launch and return a PID, a deliberately wrong password returns the exact expected Win32 error 1326. It is **not** wired to automatic seat start, and does **not** create a hardware-isolated session bound to a seat's own monitor/keyboard/mouse — see [User Account for Workstation](control-panel/user-account-for-workstation.md) for the full scope statement.
 
+That same "not wired to automatic seat start" gap is now closed: the Settings page's new **Workplace Start Mode** (Manual / At System Startup / Via Workplace 1) registers real Windows Scheduled Tasks (`schtasks.exe`, via `WindowsStartupTriggerManager`) that invoke `OpenMultiSeat.GUI.exe --start-seats`, a genuinely headless codepath (routed through a hand-written `Program.Main`, not `App.OnStartup` — a blocking async call there deadlocks waiting on a WPF Dispatcher that hasn't started pumping yet, hit and fixed while building this) that calls `SeatStartupOrchestrator.StartAllSeatsAsync` to launch Explorer as every eligible seat's account via the same `CreateProcessWithLogonW` path. A **"Start Workplaces Now"** button runs the same orchestrator interactively, behind a confirm prompt. **Disclosed limitation:** seat passwords are DPAPI-protected with `CurrentUser` scope, decryptable only by the account that saved them — the At-System-Startup task runs as `SYSTEM`, so it can register and run correctly but can't actually decrypt any seat's saved password; every attempt fails with a logged decrypt error (`%AppData%\OpenMultiSeat\startup-log.txt`), and this is unfixed pending a scope/architecture decision (see [General Settings tab](control-panel/general-settings-tab.md)). At First Login doesn't hit this specific failure, but only works end-to-end if passwords were saved while logged in as the same account as "Workplace 1."
+
 | Page | Real backend exists? | GUI wired to it? |
 |---|---|---|
 | Devices | ✅ `OpenMultiSeat.Devices` | ✅ Yes |
@@ -31,6 +33,7 @@ Credential-based process launching is real and verified: `ISessionManager.Launch
 | Audio → Seat assignment | ✅ `AudioManager.AssignAudioDeviceToSeatAsync` (pre-existing, was already correct) | ✅ Yes — "Assign to Seat…"/"Unassign" on the Audio page |
 | Shared cross-seat System pool view | ✅ reuses existing managers | ✅ Yes — new **System** page |
 | Credential-based process launch | ✅ `SessionManager.LaunchProcessWithCredentialsAsync` (`CreateProcessWithLogonW`), verified | ✅ Yes — "Test Launch…" on the User Account dialog; not wired to automatic seat start |
+| Workplace Start Mode (Manual/At System Startup/Via Workplace 1) | ✅ `WindowsStartupTriggerManager` + `SeatStartupOrchestrator` | ✅ Yes — dropdown + "Start Workplaces Now" on the Settings page; At System Startup has a disclosed DPAPI/SYSTEM decrypt limitation |
 | Input Isolation | ✅ `OpenMultiSeat.InputIsolation` | ❌ Stub only |
 
 Fixed alongside device assignment: `SeatManager`'s in-memory "already assigned elsewhere" guard (`_deviceToSeatMap`) was never rebuilt from persisted seat data — only populated by assignment calls made within the same `SeatManager` instance's own lifetime. Since the GUI constructs a fresh `SeatManager` per page load, this silently defeated the exclusivity check entirely; a device could be assigned to two seats at once with no error. `GetAllSeatsAsync` now rebuilds the map from each seat's `KeyboardIds`/`MouseIds` on every load. The same class of map (`_displayToSeatMap`) was added correctly from the start when display assignment was built. Both covered by `tests/OpenMultiSeat.Tests/SeatManagerTests.cs`. `OpenMultiSeat.Audio`'s `AudioManager` did **not** have this bug — its duplicate-assignment guard is reloaded from persistence on every call, not just within one instance's lifetime, so it needed no equivalent fix.
@@ -56,6 +59,11 @@ The original Devices/Seats/Displays/Audio screenshots (`images/screenshots/devic
 - `src/OpenMultiSeat.GUI/Pages/SystemPage.xaml(.cs)` — ✅ real, shared cross-seat pool view
 - `src/OpenMultiSeat.GUI/Windows/AssignOtherDeviceToSeatWindow.xaml(.cs)` — ✅ real, camera/USB/Bluetooth ownership-record assignment
 - `src/OpenMultiSeat.Sessions/SessionManager.cs` (`LaunchProcessWithCredentialsAsync`) — ✅ real, verified via `CreateProcessWithLogonW`
+- `src/OpenMultiSeat.Sessions/SeatStartupOrchestrator.cs` — ✅ real, starts every eligible seat via `LaunchProcessWithCredentialsAsync`
+- `src/OpenMultiSeat.Sessions/WindowsStartupTriggerManager.cs` — ✅ real, registers/removes the `schtasks.exe` Scheduled Tasks
+- `src/OpenMultiSeat.Core/GeneralSettings.cs`, `GeneralSettingsPersistence.cs` — ✅ real, persists `SeatStartMode`
+- `src/OpenMultiSeat.GUI/Program.cs`, `App.xaml.cs` (`--start-seats`) — ✅ real, headless entry point the Scheduled Tasks invoke
+- `src/OpenMultiSeat.GUI/Pages/SettingsPage.xaml(.cs)` — ✅ real, Workplace Start Mode dropdown + "Start Workplaces Now"
 - `src/OpenMultiSeat.GUI/Pages/InputPage.xaml(.cs)`
 
 ### What the remaining page needs to become real (see the matching [control-panel](control-panel/README.md) page for the ASTER-equivalent UX it should aim for)
