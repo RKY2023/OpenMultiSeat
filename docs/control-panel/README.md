@@ -41,7 +41,7 @@ Each page states **what ASTER's equivalent does**, then **OpenMultiSeat's status
 | ["Devices to Workplace(s) Assignment" Window](devices-to-workplace-assignment.md) | Devices to Workplace(s) Assignment | 🚧 Partial — exclusive single-seat assignment works (keyboard/mouse, plus camera/USB/Bluetooth as ownership records), no "To All" shared mode |
 | ["Confirm Device Destination" Window](confirm-device-destination.md) | Confirm Device Destination | 📋 Planned |
 | ["Assigning Video Outputs" Window](assigning-video-outputs.md) | Assigning Video Outputs | 🚧 Partial — real scan + assignment, no manual output remapping or clone toggle |
-| ["Input Devices Switch" Window](input-devices-switch.md) | Input Devices Switch | 🚧 Stub |
+| ["Input Devices Switch" Window](input-devices-switch.md) | Input Devices Switch | 🚧 Partial — real bind/unbind + isolation toggle + validate on the Input Isolation page; no hotkey-rebind UI |
 | ["IP Address for the Workplace" Window](ip-address-for-workplace.md) | IP Address for the Workplace | 📋 Planned |
 | ["Applications and Folders" Window](applications-and-folders.md) | Applications and Folders | 📋 Planned |
 | [Confirming Starting of Workplaces Window](confirming-starting-of-workplaces.md) | Confirming Starting of Workplaces | 🚧 Partial — a real Yes/No confirm gates the manual "Start Workplaces Now" button; no automatic boot-time prompt or "don't ask again" |
@@ -62,6 +62,6 @@ Each page states **what ASTER's equivalent does**, then **OpenMultiSeat's status
 ## Status summary
 
 - **3 pages fully implemented** (Main Window, About tab, Assign CPU Cores)
-- **8 pages are stubs or partially wired** — real backend exists; Workplaces tab, Devices to Workplace(s) Assignment, Assigning Video Outputs, and User Account for Workstation now have real seat CRUD, device/display/audio assignment, and account configuration; General Settings tab now has a real Workplace Start Mode setting wired to genuine Windows Scheduled Tasks (with a disclosed DPAPI/SYSTEM limitation under At System Startup) alongside CPU Cores; Confirming Starting of Workplaces has a real manual-trigger confirm; Workplace Tab Settings and Input Devices Switch (and Confirm Device Destination, now Planned) remain unwired (see [Known Issues](../known-issues.md))
+- **8 pages are stubs or partially wired** — real backend exists; Workplaces tab, Devices to Workplace(s) Assignment, Assigning Video Outputs, and User Account for Workstation now have real seat CRUD, device/display/audio assignment, and account configuration; General Settings tab now has a real Workplace Start Mode setting wired to genuine Windows Scheduled Tasks alongside CPU Cores; Confirming Starting of Workplaces has a real manual-trigger confirm; Input Devices Switch now has real bind/unbind + isolation toggle + validate (just no hotkey-rebind UI); only Workplace Tab Settings (and Confirm Device Destination, now Planned) remain fully unwired (see [Known Issues](../known-issues.md))
 - **8 pages are planned**, no implementation yet
 - **9 pages don't apply today** — 7 pure licensing/activation pages plus Proxy Server Setup and Support Request, which currently have no OpenMultiSeat need but could become planned items later (see [`../user-manual/licensing-model.md`](../user-manual/licensing-model.md))
