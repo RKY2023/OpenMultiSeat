@@ -22,8 +22,7 @@ public partial class AssignCpuCoresWindow : Window
     {
         InitializeComponent();
 
-        var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
-        _persistence = new SeatPersistence(loggerFactory.CreateLogger<SeatPersistence>());
+        _persistence = new SeatPersistence(GuiLoggerFactory.Instance.CreateLogger<SeatPersistence>());
         _cpuAffinityProvider = new CpuAffinityProvider();
 
         Loaded += async (_, _) => await LoadAsync();
@@ -111,6 +110,27 @@ public partial class AssignCpuCoresWindow : Window
 
     private async void OnSave(object sender, RoutedEventArgs e)
     {
+        // A seat's CpuCoreAffinity is empty for two very different reasons: "every box is
+        // checked" (explicitly unrestricted) and "every box is unchecked" (nothing selected).
+        // Both would collapse to the same empty list, but Windows itself requires a process
+        // affinity mask to have at least one bit set (SetProcessAffinityMask fails on 0) — so
+        // "zero cores checked" isn't a valid state to save at all, not just an ambiguous one.
+        var seatsWithNoCoresChecked = _seats
+            .Where(seat => _checkboxesBySeat[seat.Id].All(cb => cb.IsChecked != true))
+            .Select(seat => seat.Name)
+            .ToList();
+
+        if (seatsWithNoCoresChecked.Count > 0)
+        {
+            MessageBox.Show(
+                "These seats have no CPU cores checked, which isn't a valid affinity — a seat needs " +
+                "at least one core to run on:\n\n" + string.Join("\n", seatsWithNoCoresChecked) +
+                "\n\nCheck at least one core for each of these seats (or check every core for " +
+                "\"no restriction\") before saving.",
+                "Assign CPU Cores", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
         foreach (var seat in _seats)
         {
             var checkboxes = _checkboxesBySeat[seat.Id];

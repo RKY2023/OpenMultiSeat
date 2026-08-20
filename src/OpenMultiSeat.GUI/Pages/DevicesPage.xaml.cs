@@ -25,9 +25,8 @@ public partial class DevicesPage : Page
     {
         InitializeComponent();
 
-        var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
-        _persistence = new DevicePersistence(loggerFactory.CreateLogger<DevicePersistence>());
-        _enumerator = new HidDeviceEnumerator(loggerFactory.CreateLogger<HidDeviceEnumerator>(), _persistence);
+        _persistence = new DevicePersistence(GuiLoggerFactory.Instance.CreateLogger<DevicePersistence>());
+        _enumerator = new HidDeviceEnumerator(GuiLoggerFactory.Instance.CreateLogger<HidDeviceEnumerator>(), _persistence);
 
         Loaded += async (_, _) => await LoadFromRegistryAsync();
     }

@@ -55,6 +55,10 @@ public class HidDeviceEnumerator : IHidDeviceEnumerator
             uint numDevices = 0;
             uint size = (uint)Marshal.SizeOf<NativeMethods.RawInputDeviceList>();
 
+            // One Win32_PnPEntity query for the whole scan, reused for every device's friendly-
+            // name lookup below, instead of a separate WMI round-trip per device.
+            var pnpEntities = await GetAllPnpEntitiesAsync();
+
             if (NativeMethods.GetRawInputDeviceList(IntPtr.Zero, ref numDevices, size) == 0)
             {
                 if (numDevices == 0)
@@ -75,7 +79,7 @@ public class HidDeviceEnumerator : IHidDeviceEnumerator
                             var deviceList = Marshal.PtrToStructure<NativeMethods.RawInputDeviceList>(
                                 pRawInputDeviceList + (int)offset);
 
-                            var device = await GetDeviceInfoAsync(deviceList.Device, (NativeMethods.RawInputDeviceType)deviceList.Type);
+                            var device = await GetDeviceInfoAsync(deviceList.Device, (NativeMethods.RawInputDeviceType)deviceList.Type, pnpEntities);
                             if (device != null)
                             {
                                 devices.Add(device);
@@ -97,7 +101,10 @@ public class HidDeviceEnumerator : IHidDeviceEnumerator
         return devices;
     }
 
-    private async Task<InputDevice?> GetDeviceInfoAsync(IntPtr deviceHandle, NativeMethods.RawInputDeviceType type)
+    private async Task<InputDevice?> GetDeviceInfoAsync(
+        IntPtr deviceHandle,
+        NativeMethods.RawInputDeviceType type,
+        IReadOnlyList<(string PnpDeviceId, string? Name, string? Manufacturer)> pnpEntities)
     {
         try
         {
@@ -121,7 +128,7 @@ public class HidDeviceEnumerator : IHidDeviceEnumerator
             var vidPid = ExtractVidPid(devicePath);
 
             var stableId = await _persistence.GenerateStableIdAsync(hardwareId);
-            var (wmiName, wmiManufacturer) = await TryGetFriendlyNameViaWmiAsync(hardwareId);
+            var (wmiName, wmiManufacturer) = FindFriendlyName(hardwareId, pnpEntities);
 
             var device = new InputDevice
             {
@@ -165,45 +172,71 @@ public class HidDeviceEnumerator : IHidDeviceEnumerator
     }
 
     /// <summary>
-    /// Looks up the real friendly name/manufacturer Windows already has for this device via
-    /// WMI's Win32_PnPEntity, matched by the device's PnP instance-ID fragment (the same
-    /// "5&amp;318818&amp;0&amp;0002"-style segment ExtractHardwareId already pulls out of the raw
-    /// input device path). This is the standard, low-risk way to resolve a real product name —
-    /// avoids hand-rolling SetupAPI's SP_DEVICE_INTERFACE_DETAIL_DATA marshaling, which has a
-    /// well-known fixed-size/cbSize footgun. Returns (null, null) if WMI has nothing for this
-    /// device or the query fails; the caller falls back to raw path parsing in that case.
+    /// Fetches every Win32_PnPEntity Windows currently knows about, once per scan — a single WMI
+    /// round-trip reused for every device's friendly-name lookup below, instead of one query per
+    /// device. No WHERE clause, so there's no user-influenced string built into the WQL query text
+    /// (the earlier per-device version interpolated a device path fragment into a LIKE clause
+    /// without escaping WQL's own wildcard characters, '%' and '_').
     /// </summary>
-    private static Task<(string? Name, string? Manufacturer)> TryGetFriendlyNameViaWmiAsync(string hardwareId)
+    private static Task<List<(string PnpDeviceId, string? Name, string? Manufacturer)>> GetAllPnpEntitiesAsync()
     {
         return Task.Run(() =>
         {
-            if (string.IsNullOrWhiteSpace(hardwareId))
-                return (null, (string?)null);
+            var entities = new List<(string, string?, string?)>();
 
             try
             {
-                var escaped = hardwareId.Replace("'", "''");
                 using var searcher = new ManagementObjectSearcher(
-                    $"SELECT Name, Caption, Manufacturer FROM Win32_PnPEntity WHERE PNPDeviceID LIKE '%{escaped}%'");
+                    "SELECT PNPDeviceID, Name, Caption, Manufacturer FROM Win32_PnPEntity");
 
                 foreach (ManagementBaseObject result in searcher.Get())
                 {
-                    using var device = result;
-                    var name = (device["Caption"] as string) ?? (device["Name"] as string);
-                    var manufacturer = device["Manufacturer"] as string;
+                    using var entity = result;
+                    var pnpDeviceId = entity["PNPDeviceID"] as string;
+                    if (string.IsNullOrEmpty(pnpDeviceId))
+                        continue;
 
-                    if (!string.IsNullOrWhiteSpace(name))
-                        return (name, manufacturer);
+                    var name = (entity["Caption"] as string) ?? (entity["Name"] as string);
+                    var manufacturer = entity["Manufacturer"] as string;
+                    entities.Add((pnpDeviceId, name, manufacturer));
                 }
             }
             catch
             {
-                // WMI unavailable, permission-restricted, or the query failed for this
-                // device — non-fatal, the caller falls back to raw path parsing.
+                // WMI unavailable or restricted — return whatever was gathered (possibly empty);
+                // callers fall back to raw path parsing per device in that case.
             }
 
-            return (null, (string?)null);
+            return entities;
         });
+    }
+
+    /// <summary>
+    /// Matches a device's PnP instance-ID fragment (the "5&amp;318818&amp;0&amp;0002"-style segment
+    /// ExtractHardwareId pulls out of the raw input device path) against the batch of PnP entities
+    /// fetched by <see cref="GetAllPnpEntitiesAsync"/>. Uses EndsWith rather than a bare substring
+    /// match: Windows' PNPDeviceID convention is "Enumerator\HardwareID\InstanceID", and the
+    /// fragment we have is exactly that trailing InstanceID segment — matching only at the end
+    /// avoids picking up an unrelated PnP entity whose HardwareID segment happens to contain the
+    /// same characters as another device's instance ID.
+    /// </summary>
+    private static (string? Name, string? Manufacturer) FindFriendlyName(
+        string hardwareId,
+        IReadOnlyList<(string PnpDeviceId, string? Name, string? Manufacturer)> pnpEntities)
+    {
+        if (string.IsNullOrWhiteSpace(hardwareId))
+            return (null, null);
+
+        foreach (var entity in pnpEntities)
+        {
+            if (entity.PnpDeviceId.EndsWith(hardwareId, StringComparison.OrdinalIgnoreCase)
+                && !string.IsNullOrWhiteSpace(entity.Name))
+            {
+                return (entity.Name, entity.Manufacturer);
+            }
+        }
+
+        return (null, null);
     }
 
     private string ExtractHardwareId(string devicePath)

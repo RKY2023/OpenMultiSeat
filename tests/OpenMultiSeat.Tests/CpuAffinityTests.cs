@@ -71,4 +71,25 @@ public class CpuAffinityTests
         var provider = new CpuAffinityProvider();
         provider.ComputeAffinityMask(null!);
     }
+
+    [TestMethod]
+    public void ComputeAffinityMask_CoresBelow64_ExplicitCoreCount_SetsCorrectBits()
+    {
+        // Uses the (coreIndices, coreCount) overload so this doesn't depend on the test
+        // machine's real core count — exercises the same path a >64-core machine would take
+        // for its first 64 cores.
+        var mask = CpuAffinityProvider.ComputeAffinityMask([0, 63], coreCount: 128);
+        Assert.AreEqual(unchecked((nint)((1L << 63) | 1L)), mask);
+    }
+
+    [TestMethod]
+    [ExpectedException(typeof(NotSupportedException))]
+    public void ComputeAffinityMask_CoreAt64OrBeyond_Throws()
+    {
+        // A machine with >64 logical cores is exactly when core index 64 becomes a valid,
+        // in-range index (passes the ArgumentOutOfRangeException check) but SetProcessAffinityMask
+        // still can't address it without processor-group support — must fail loudly, not silently
+        // wrap the bit position (1L << 64 == 1L << 0 in C#'s shift semantics).
+        CpuAffinityProvider.ComputeAffinityMask([64], coreCount: 128);
+    }
 }
