@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using OpenMultiSeat.Core;
+using System.Management;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -120,6 +121,7 @@ public class HidDeviceEnumerator : IHidDeviceEnumerator
             var vidPid = ExtractVidPid(devicePath);
 
             var stableId = await _persistence.GenerateStableIdAsync(hardwareId);
+            var (wmiName, wmiManufacturer) = await TryGetFriendlyNameViaWmiAsync(hardwareId);
 
             var device = new InputDevice
             {
@@ -131,8 +133,13 @@ public class HidDeviceEnumerator : IHidDeviceEnumerator
                     NativeMethods.RawInputDeviceType.Mouse => InputDeviceType.Mouse,
                     _ => InputDeviceType.Other
                 },
-                ProductName = ExtractProductName(devicePath),
-                Manufacturer = ExtractManufacturer(devicePath),
+                // Prefer the real friendly name/manufacturer Windows already knows via
+                // Win32_PnPEntity. Fall back to parsing the raw device instance path
+                // (e.g. "VID_046D PID_C542 Col01") only when WMI has nothing for this
+                // device — that fallback is a device path, not a product name, so it
+                // reads as placeholder/dummy data even though it's real hardware.
+                ProductName = wmiName ?? ExtractProductName(devicePath),
+                Manufacturer = wmiManufacturer ?? ExtractManufacturer(devicePath),
                 VendorId = vidPid.VendorId,
                 ProductId = vidPid.ProductId
             };
@@ -155,6 +162,48 @@ public class HidDeviceEnumerator : IHidDeviceEnumerator
             _logger.LogError(ex, "Error getting device info");
             return null;
         }
+    }
+
+    /// <summary>
+    /// Looks up the real friendly name/manufacturer Windows already has for this device via
+    /// WMI's Win32_PnPEntity, matched by the device's PnP instance-ID fragment (the same
+    /// "5&amp;318818&amp;0&amp;0002"-style segment ExtractHardwareId already pulls out of the raw
+    /// input device path). This is the standard, low-risk way to resolve a real product name —
+    /// avoids hand-rolling SetupAPI's SP_DEVICE_INTERFACE_DETAIL_DATA marshaling, which has a
+    /// well-known fixed-size/cbSize footgun. Returns (null, null) if WMI has nothing for this
+    /// device or the query fails; the caller falls back to raw path parsing in that case.
+    /// </summary>
+    private static Task<(string? Name, string? Manufacturer)> TryGetFriendlyNameViaWmiAsync(string hardwareId)
+    {
+        return Task.Run(() =>
+        {
+            if (string.IsNullOrWhiteSpace(hardwareId))
+                return (null, (string?)null);
+
+            try
+            {
+                var escaped = hardwareId.Replace("'", "''");
+                using var searcher = new ManagementObjectSearcher(
+                    $"SELECT Name, Caption, Manufacturer FROM Win32_PnPEntity WHERE PNPDeviceID LIKE '%{escaped}%'");
+
+                foreach (ManagementBaseObject result in searcher.Get())
+                {
+                    using var device = result;
+                    var name = (device["Caption"] as string) ?? (device["Name"] as string);
+                    var manufacturer = device["Manufacturer"] as string;
+
+                    if (!string.IsNullOrWhiteSpace(name))
+                        return (name, manufacturer);
+                }
+            }
+            catch
+            {
+                // WMI unavailable, permission-restricted, or the query failed for this
+                // device — non-fatal, the caller falls back to raw path parsing.
+            }
+
+            return (null, (string?)null);
+        });
     }
 
     private string ExtractHardwareId(string devicePath)
