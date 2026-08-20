@@ -14,6 +14,7 @@
         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,15">
             <Button Content="Create Seat..." Click="OnCreateSeat" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,0,10,0"/>
             <Button Content="Delete Selected" Click="OnDeleteSeat" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,0,10,0"/>
+            <Button Content="User Account..." Click="OnUserAccount" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,0,10,0"/>
             <Button Content="Refresh" Click="OnRefresh" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,0,10,0"/>
             <TextBlock x:Name="StatusText" VerticalAlignment="Center" Foreground="#666666" FontSize="12"/>
         </StackPanel>

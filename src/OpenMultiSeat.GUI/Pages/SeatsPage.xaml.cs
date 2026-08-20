@@ -86,12 +86,39 @@ public partial class SeatsPage : Page
         await LoadAsync();
     }
 
+    private async void OnUserAccount(object sender, RoutedEventArgs e)
+    {
+        if (SeatsGrid.SelectedItem is not SeatRow row)
+        {
+            MessageBox.Show("Select a seat first.", "Seats", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var window = new UserAccountWindow(_seatManager, row.Seat)
+        {
+            Owner = Window.GetWindow(this)
+        };
+
+        if (window.ShowDialog() == true)
+        {
+            await LoadAsync();
+        }
+    }
+
     /// <summary>Flattens a Seat's list-valued fields into display-ready properties for the grid.</summary>
     private sealed class SeatRow(Seat seat)
     {
         public Seat Seat { get; } = seat;
         public string Name => Seat.Name;
-        public string WindowsUserDisplay => string.IsNullOrWhiteSpace(Seat.WindowsUser) ? "(not assigned)" : Seat.WindowsUser!;
+        public string WindowsUserDisplay
+        {
+            get
+            {
+                if (Seat.DisplayLoginDialog || string.IsNullOrWhiteSpace(Seat.WindowsUser))
+                    return "(login prompt)";
+                return Seat.WindowsDomain != null ? $"{Seat.WindowsDomain}\\{Seat.WindowsUser}" : Seat.WindowsUser;
+            }
+        }
         public int DeviceCount => Seat.KeyboardIds.Count + Seat.MouseIds.Count;
         public int DisplayCount => Seat.DisplayIds.Count;
         public string Status => Seat.Status.ToString();

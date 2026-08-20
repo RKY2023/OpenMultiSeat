@@ -36,7 +36,7 @@ Each page states **what ASTER's equivalent does**, then **OpenMultiSeat's status
 
 | Page | ASTER equivalent | Status |
 |---|---|---|
-| [The 'User Account for Workstation' Window](user-account-for-workstation.md) | User Account for Workstation | 📋 Planned |
+| [The 'User Account for Workstation' Window](user-account-for-workstation.md) | User Account for Workstation | 🚧 Partial — real account/password config with DPAPI-encrypted storage, no auto-login/session-launch wiring yet |
 | ["Workplace Tab Settings" Window](workplace-tab-settings.md) | Workplace Tab Settings | 🚧 Stub |
 | ["Devices to Workplace(s) Assignment" Window](devices-to-workplace-assignment.md) | Devices to Workplace(s) Assignment | 🚧 Partial — exclusive single-seat assignment works, no "To All" shared mode |
 | ["Confirm Device Destination" Window](confirm-device-destination.md) | Confirm Device Destination | 📋 Planned |
@@ -62,6 +62,6 @@ Each page states **what ASTER's equivalent does**, then **OpenMultiSeat's status
 ## Status summary
 
 - **4 pages fully implemented** (Main Window, General Settings tab, About tab, Assign CPU Cores)
-- **5 pages are stubs or partially wired** — real backend exists; Workplaces tab, Devices to Workplace(s) Assignment, and Assigning Video Outputs now have real seat CRUD, device assignment, display assignment, and audio assignment, but Workplace Tab Settings and Input Devices Switch (and Confirm Device Destination, now Planned) remain unwired (see [Known Issues](../known-issues.md))
-- **10 pages are planned**, no implementation yet
+- **6 pages are stubs or partially wired** — real backend exists; Workplaces tab, Devices to Workplace(s) Assignment, Assigning Video Outputs, and User Account for Workstation now have real seat CRUD, device/display/audio assignment, and account configuration, but Workplace Tab Settings and Input Devices Switch (and Confirm Device Destination, now Planned) remain unwired (see [Known Issues](../known-issues.md))
+- **9 pages are planned**, no implementation yet
 - **9 pages don't apply today** — 7 pure licensing/activation pages plus Proxy Server Setup and Support Request, which currently have no OpenMultiSeat need but could become planned items later (see [`../user-manual/licensing-model.md`](../user-manual/licensing-model.md))
