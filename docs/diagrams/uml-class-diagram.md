@@ -48,7 +48,12 @@ classDiagram
         }
         class ICpuAffinityProvider {
             <<interface>>
-            +ApplyAffinity(Seat, IntPtr processHandle)
+            +int LogicalCoreCount
+            +ComputeAffinityMask(List~int~) nint
+        }
+        class CpuAffinityProvider {
+            +int LogicalCoreCount
+            +ComputeAffinityMask(List~int~) nint
         }
         class SeatManager {
             +AssignDevice(Seat, DeviceRecord)
@@ -84,10 +89,7 @@ classDiagram
             +EnumerateSessions() List~WtsSessionInfo~
         }
         class ProcessLauncher {
-            +Launch(Seat, string path)
-        }
-        class CpuAffinityManager {
-            +ApplyAffinity(Seat, IntPtr processHandle)
+            +CreateProcessInSession(uint, string, string, nint?) uint
         }
     }
 
@@ -125,17 +127,17 @@ classDiagram
 
     DevicePersistence ..|> IDevicePersistence
     DisplayEnumerator ..|> IDisplayEnumerator
-    CpuAffinityManager ..|> ICpuAffinityProvider
+    CpuAffinityProvider ..|> ICpuAffinityProvider
     DisplayManager --> IDisplayEnumerator : depends on
     SeatManager --> IDevicePersistence : depends on
-    ProcessLauncher --> ICpuAffinityProvider : depends on
+    SessionManager --> ICpuAffinityProvider : depends on
     SeatManager --> Seat
     Seat --> DeviceRecord
     Seat --> Display
     Seat --> AudioDevice
     SeatConfiguration --> Seat
     HidDeviceEnumerator --> DeviceRecord : produces
-    SessionManager --> ProcessLauncher
+    SessionManager --> ProcessLauncher : passes computed affinity mask
     MultiSeatService --> SeatManager
     MultiSeatService --> SessionManager
     MultiSeatService --> InputIsolationService
@@ -148,4 +150,4 @@ classDiagram
     AudioPage --> MainWindow
 ```
 
-**Status note:** `SeatsPage`, `DisplaysPage`, `InputPage`, and `AudioPage` are shown here as they *should* be wired (bound to their respective managers over IPC) — today they are stub views with no such binding. See [Known Issues](../known-issues.md). `ICpuAffinityProvider`/`CpuAffinityManager` represent a fifth, currently entirely unbuilt isolation axis (CPU scheduling, alongside device/display/audio/input) — see [Assign CPU Cores](../control-panel/assign-cpu-cores.md).
+**Status note:** `SeatsPage`, `DisplaysPage`, `InputPage`, and `AudioPage` are shown here as they *should* be wired (bound to their respective managers over IPC) — today they are stub views with no such binding. `DevicesPage` looks more complete (a real `DataGrid` with the right columns) but is in the same boat: nothing populates it. See [Known Issues](../known-issues.md). `ICpuAffinityProvider`/`CpuAffinityProvider` are the exception — CPU-core isolation, the fifth axis alongside device/display/audio/input, is implemented (see [Assign CPU Cores](../control-panel/assign-cpu-cores.md)), though its GUI reads/writes seat data directly via `ISeatPersistence` rather than through `NamedPipeServer`/`NamedPipeClient`, since no page has that IPC wiring yet.

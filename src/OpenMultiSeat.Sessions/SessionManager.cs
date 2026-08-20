@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using OpenMultiSeat.Core;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -8,7 +9,7 @@ public interface ISessionManager
 {
     Task<WindowsSession?> GetSessionForUserAsync(string userName);
     Task<IReadOnlyList<WindowsSession>> GetAllSessionsAsync();
-    Task<uint> LaunchProcessInSessionAsync(uint sessionId, string userName, string executablePath, string? arguments = null, string? workingDirectory = null);
+    Task<uint> LaunchProcessInSessionAsync(uint sessionId, string userName, string executablePath, string? arguments = null, string? workingDirectory = null, IReadOnlyList<int>? cpuCoreAffinity = null);
     Task<bool> IsUserLoggedInAsync(string userName);
     Task MonitorSessionChangesAsync(Func<SessionChangeEvent, Task> onSessionChange, CancellationToken cancellationToken);
     uint GetActiveConsoleSessionId();
@@ -38,11 +39,13 @@ public class SessionManager : ISessionManager
 {
     private readonly ILogger<SessionManager> _logger;
     private readonly ISessionEnumerator _enumerator;
+    private readonly ICpuAffinityProvider _cpuAffinityProvider;
 
-    public SessionManager(ILogger<SessionManager> logger, ISessionEnumerator enumerator)
+    public SessionManager(ILogger<SessionManager> logger, ISessionEnumerator enumerator, ICpuAffinityProvider cpuAffinityProvider)
     {
         _logger = logger;
         _enumerator = enumerator;
+        _cpuAffinityProvider = cpuAffinityProvider;
     }
 
     public async Task<WindowsSession?> GetSessionForUserAsync(string userName)
@@ -62,19 +65,33 @@ public class SessionManager : ISessionManager
         string userName,
         string executablePath,
         string? arguments = null,
-        string? workingDirectory = null)
+        string? workingDirectory = null,
+        IReadOnlyList<int>? cpuCoreAffinity = null)
     {
         if (!File.Exists(executablePath))
             throw new FileNotFoundException($"Executable not found: {executablePath}");
 
         try
         {
+            nint? affinityMask = null;
+            if (cpuCoreAffinity is { Count: > 0 })
+            {
+                affinityMask = _cpuAffinityProvider.ComputeAffinityMask(cpuCoreAffinity);
+            }
+
             var processId = ProcessLauncher.CreateProcessInSession(
                 sessionId,
                 userName,
                 executablePath,
                 arguments,
-                workingDirectory);
+                workingDirectory,
+                affinityMask);
+
+            if (affinityMask.HasValue)
+            {
+                _logger.LogInformation(
+                    $"Applied CPU affinity mask 0x{(long)affinityMask.Value:X} ({cpuCoreAffinity!.Count} core(s)) to process {processId}");
+            }
 
             _logger.LogInformation(
                 $"Process launched in session {sessionId}: {Path.GetFileName(executablePath)} (PID: {processId})");
@@ -193,7 +210,8 @@ public static class ProcessLauncher
         string userName,
         string executablePath,
         string? arguments = null,
-        string? workingDirectory = null)
+        string? workingDirectory = null,
+        nint? cpuAffinityMask = null)
     {
         // Get session token
         if (!ProcessNativeMethods.WtsQueryUserToken(sessionId, out var userToken))
@@ -242,6 +260,17 @@ public static class ProcessLauncher
                 {
                     throw new InvalidOperationException(
                         $"Failed to create process: {Marshal.GetLastWin32Error()}");
+                }
+
+                // Apply CPU-core affinity, if requested, while the process handle is still open.
+                // Non-fatal: the process is already running, so a failure here is logged, not thrown.
+                if (cpuAffinityMask.HasValue && processInfo.hProcess != IntPtr.Zero)
+                {
+                    if (!ProcessNativeMethods.SetProcessAffinityMask(processInfo.hProcess, cpuAffinityMask.Value))
+                    {
+                        _logger.LogWarning(
+                            $"Failed to set CPU affinity mask 0x{(long)cpuAffinityMask.Value:X} for process {processInfo.dwProcessId}: {Marshal.GetLastWin32Error()}");
+                    }
                 }
 
                 // Close process and thread handles
@@ -333,4 +362,7 @@ internal static class ProcessNativeMethods
 
     [DllImport("kernel32.dll", SetLastError = true)]
     public static extern bool CloseHandle(IntPtr hObject);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern bool SetProcessAffinityMask(IntPtr hProcess, IntPtr dwProcessAffinityMask);
 }

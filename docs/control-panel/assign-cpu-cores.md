@@ -8,15 +8,14 @@ The "Workplace CPU cores usage" window shows a matrix with one row per configure
 
 ## OpenMultiSeat status
 
-📋 **Planned** — no current implementation, and no existing page in this doc set covered CPU-level isolation before this one.
+✅ **Implemented** — the first OpenMultiSeat page in this doc set to move past the "planned" stage after ASTER's own live UI motivated it.
 
-OpenMultiSeat currently isolates seats along four axes: input devices ([Input Isolation](../known-issues.md)), displays, audio, and (planned) network identity ([IP Address for the Workplace](ip-address-for-workplace.md)) — but not CPU scheduling. On a single physical PC running several seats' workloads simultaneously, an unbounded seat can still starve its neighbors' CPU time even with devices/displays/audio fully isolated, so this is a real gap for parity with ASTER, not just a cosmetic one.
+- `Seat.CpuCoreAffinity` (`OpenMultiSeat.Core`) is a list of allowed logical-core indices; empty means unrestricted.
+- `ICpuAffinityProvider` / `CpuAffinityProvider` (`OpenMultiSeat.Core`) turn a list of core indices into a Windows affinity bitmask — pure bit math, fully unit-tested (`tests/OpenMultiSeat.Tests/CpuAffinityTests.cs`).
+- `OpenMultiSeat.Sessions.ProcessLauncher.CreateProcessInSession` applies the mask via the Windows `SetProcessAffinityMask` API right after `CreateProcessAsUser` succeeds, while the process handle is still open; a failure here is logged, not thrown, since the process is already running by that point.
+- `SessionManager.LaunchProcessInSessionAsync` takes an optional `cpuCoreAffinity` parameter and only computes/applies a mask when one is actually supplied — an empty or omitted list means "don't touch affinity at all," matching Windows' own default.
+- **"Assign CPU Cores…"** is a real button on the Settings page, opening `AssignCpuCoresWindow` — a checkbox matrix (seats × logical cores, sized from `Environment.ProcessorCount`) that reads and writes real `Seat` records.
 
-A real implementation would need:
-
-- A new Core interface, e.g. `ICpuAffinityProvider`, following the same dependency-inversion pattern as `IDevicePersistence` and `IDisplayEnumerator` — interface in `OpenMultiSeat.Core`, implementation in a feature project (most naturally `OpenMultiSeat.Sessions`, since that's where processes are actually started).
-- An affinity-mask field on `Seat`/`SeatConfiguration`, persisted alongside the existing seat model.
-- Applying the mask at process-launch time in `OpenMultiSeat.Sessions.ProcessLauncher`, via the Windows `SetProcessAffinityMask` API right after `CreateProcessAsUser` starts a seat's session process (and its children, if scoping needs to extend beyond the initial shell).
-- A GUI matrix (workplaces × logical cores) on the Seats page, populated from `Environment.ProcessorCount` and read/written through the same IPC channel (`OpenMultiSeat.IPC`) used for other seat configuration.
+**Caveat, stated plainly:** the GUI reads/writes seat data by calling `ISeatPersistence` directly against the same on-disk store (`%AppData%\OpenMultiSeat\seats.json`) the Service's `SeatManager` uses — there is no IPC round-trip through `OpenMultiSeat.IPC` yet, because *no* GUI page has that wiring today (see the note on `DevicesPage` in [Known Issues](../known-issues.md)). The dialog also depends on seats already existing: since the Seats page still can't create a seat, `AssignCpuCoresWindow` correctly shows an empty state ("No seats are configured yet") until a seat exists via some other path (e.g. `SeatManager.CreateSeatAsync` called directly, or a future working Seats page).
 
 See [UML Class Diagram](../diagrams/uml-class-diagram.md) and [DFD](../diagrams/dfd.md) for how this fits the target architecture.
