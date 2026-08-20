@@ -1,9 +1,24 @@
 using Microsoft.Extensions.Logging;
 using OpenMultiSeat.Core;
+using System.Management;
 using System.Runtime.InteropServices;
 
 namespace OpenMultiSeat.Displays;
 
+/// <summary>
+/// Enumerates displays via the classic EnumDisplayMonitors/GetMonitorInfo/EnumDisplaySettings
+/// GDI APIs, not the newer DisplayConfig API family (QueryDisplayConfig etc.). This replaced an
+/// earlier QueryDisplayConfig-based implementation that turned out to be doubly broken: first a
+/// struct-size mismatch caused genuine heap corruption on every call (fixed), and after that fix
+/// QueryDisplayConfig still returned an all-zeroed path even though GetDisplayConfigBufferSizes
+/// correctly reported exactly one active path — a deeper marshaling issue that wasn't worth
+/// continuing to chase given a much simpler, far more commonly used API does the same job
+/// correctly (verified directly against this environment: System.Windows.Forms.Screen.AllScreens,
+/// which is a thin wrapper over these same GDI calls, correctly found the real monitor here).
+/// Trade-off: no connector/output-technology type (HDMI/DP/etc.) — GDI doesn't expose that, only
+/// DisplayConfig does. Everything else the Display model needs (name, resolution, refresh rate,
+/// position, primary flag) is available and simpler to get right.
+/// </summary>
 public class DisplayEnumerator : IDisplayEnumerator
 {
     private readonly ILogger<DisplayEnumerator> _logger;
@@ -24,42 +39,34 @@ public class DisplayEnumerator : IDisplayEnumerator
 
         try
         {
-            uint pathCount = 0, modeCount = 0;
+            var monitorHandles = new List<IntPtr>();
 
-            if (NativeMethods.GetDisplayConfigBufferSizes(
-                NativeMethods.QueryDisplayConfigFlags.AllPaths,
-                out pathCount, out modeCount) != NativeMethods.ErrorSuccess)
+            bool Callback(IntPtr hMonitor, IntPtr hdcMonitor, ref NativeMethods.Rect lprcMonitor, IntPtr dwData)
             {
-                _logger.LogWarning("Failed to get display config buffer sizes");
+                monitorHandles.Add(hMonitor);
+                return true; // keep enumerating
+            }
+
+            if (!NativeMethods.EnumDisplayMonitors(IntPtr.Zero, IntPtr.Zero, Callback, IntPtr.Zero))
+            {
+                _logger.LogWarning("EnumDisplayMonitors failed");
                 return displays;
             }
 
-            if (pathCount == 0)
+            if (monitorHandles.Count == 0)
             {
                 _logger.LogInformation("No displays found");
                 return displays;
             }
 
-            var paths = new NativeMethods.DisplayConfigPathInfo[pathCount];
-            var modes = new NativeMethods.DisplayConfigModeInfo[modeCount];
+            var friendlyNames = GetFriendlyNamesFromWmi();
+            var friendlyNameIndex = 0;
 
-            if (NativeMethods.QueryDisplayConfig(
-                NativeMethods.QueryDisplayConfigFlags.AllPaths,
-                ref pathCount, paths,
-                ref modeCount, modes,
-                IntPtr.Zero) != NativeMethods.ErrorSuccess)
+            foreach (var hMonitor in monitorHandles)
             {
-                _logger.LogWarning("Failed to query display config");
-                return displays;
-            }
-
-            for (int i = 0; i < pathCount; i++)
-            {
-                var display = CreateDisplayFromPath(paths[i], modes);
+                var display = CreateDisplayFromMonitor(hMonitor, friendlyNames, ref friendlyNameIndex);
                 if (display != null)
-                {
                     displays.Add(display);
-                }
             }
         }
         catch (Exception ex)
@@ -70,314 +77,159 @@ public class DisplayEnumerator : IDisplayEnumerator
         return displays;
     }
 
-    private Display? CreateDisplayFromPath(
-        NativeMethods.DisplayConfigPathInfo path,
-        NativeMethods.DisplayConfigModeInfo[] modes)
+    private Display? CreateDisplayFromMonitor(IntPtr hMonitor, IReadOnlyList<string> friendlyNames, ref int friendlyNameIndex)
     {
         try
         {
-            var targetMode = modes.FirstOrDefault(m =>
-                m.Id == path.TargetInfo.Id &&
-                m.InfoType == NativeMethods.DisplayConfigModeInfoType.Target);
-
-            if (targetMode.InfoType != NativeMethods.DisplayConfigModeInfoType.Target)
-                return null;
-
-            var sourceMode = modes.FirstOrDefault(m =>
-                m.Id == path.SourceInfo.Id &&
-                m.InfoType == NativeMethods.DisplayConfigModeInfoType.Source);
-
-            var displayName = GetDisplayName(path.TargetInfo.AdapterId, path.TargetInfo.Id);
-
-            var display = new Display
+            var info = new NativeMethods.MonitorInfoEx
             {
-                DisplayId = $"DISPLAY_{path.TargetInfo.Id}",
-                DeviceName = displayName ?? $"Display {path.TargetInfo.Id}",
-                Width = targetMode.ModeInfo.TargetMode.TargetVideoSignalInfo.ActiveSize.CX,
-                Height = targetMode.ModeInfo.TargetMode.TargetVideoSignalInfo.ActiveSize.CY,
-                RefreshRate = targetMode.ModeInfo.TargetMode.TargetVideoSignalInfo.VSyncFreq.Numerator /
-                              targetMode.ModeInfo.TargetMode.TargetVideoSignalInfo.VSyncFreq.Denominator,
-                PositionX = (int)sourceMode.ModeInfo.SourceMode.Position.X,
-                PositionY = (int)sourceMode.ModeInfo.SourceMode.Position.Y,
-                IsPrimary = (path.Flags & NativeMethods.DisplayConfigPathInfoFlags.PathPrimary) != 0,
-                IsConnected = (path.TargetInfo.OutputTechnology !=
-                              NativeMethods.DisplayConfigVideoOutputTechnology.Other),
-                ConnectionType = path.TargetInfo.OutputTechnology.ToString()
+                cbSize = (uint)Marshal.SizeOf<NativeMethods.MonitorInfoEx>()
             };
 
-            return display;
+            if (!NativeMethods.GetMonitorInfo(hMonitor, ref info))
+            {
+                _logger.LogWarning("GetMonitorInfo failed for a monitor handle");
+                return null;
+            }
+
+            var width = (uint)Math.Max(0, info.rcMonitor.Right - info.rcMonitor.Left);
+            var height = (uint)Math.Max(0, info.rcMonitor.Bottom - info.rcMonitor.Top);
+            var isPrimary = (info.dwFlags & NativeMethods.MonitorInfoFPrimary) != 0;
+
+            uint refreshRate = 0;
+            var devMode = new NativeMethods.DevMode { dmSize = (short)Marshal.SizeOf<NativeMethods.DevMode>() };
+            if (NativeMethods.EnumDisplaySettings(info.szDevice, NativeMethods.EnumCurrentSettings, ref devMode)
+                && devMode.dmDisplayFrequency > 1) // 0/1 both mean "hardware default", not a real Hz value
+            {
+                refreshRate = (uint)devMode.dmDisplayFrequency;
+            }
+
+            // WMI's Win32_DesktopMonitor doesn't expose a key that reliably correlates to
+            // \\.\DISPLAYn device names, so this matches by enumeration order — good enough for
+            // the common single/dual-monitor case, not guaranteed correct for larger setups.
+            var friendlyName = friendlyNameIndex < friendlyNames.Count ? friendlyNames[friendlyNameIndex] : null;
+            friendlyNameIndex++;
+
+            return new Display
+            {
+                DisplayId = info.szDevice,
+                DeviceName = friendlyName ?? info.szDevice,
+                Width = width,
+                Height = height,
+                RefreshRate = refreshRate,
+                PositionX = info.rcMonitor.Left,
+                PositionY = info.rcMonitor.Top,
+                IsPrimary = isPrimary,
+                IsConnected = true,
+                ConnectionType = null
+            };
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error creating display from path");
+            _logger.LogError(ex, "Error creating display from monitor handle");
             return null;
         }
     }
 
-    private string? GetDisplayName(NativeMethods.Luid adapterId, uint targetId)
+    private List<string> GetFriendlyNamesFromWmi()
     {
+        var names = new List<string>();
+
         try
         {
-            var targetName = new NativeMethods.DisplayConfigTargetDeviceName
+            using var searcher = new ManagementObjectSearcher("SELECT Name, Caption FROM Win32_DesktopMonitor");
+            foreach (ManagementBaseObject result in searcher.Get())
             {
-                Header = new NativeMethods.DisplayConfigDeviceInfoHeader
-                {
-                    Type = NativeMethods.DisplayConfigDeviceInfoType.GetTargetName,
-                    Size = (uint)Marshal.SizeOf<NativeMethods.DisplayConfigTargetDeviceName>(),
-                    AdapterId = adapterId,
-                    Id = targetId
-                }
-            };
-
-            if (NativeMethods.DisplayConfigGetDeviceInfo(ref targetName.Header) == NativeMethods.ErrorSuccess)
-            {
-                return targetName.MonitorFriendlyDeviceName;
+                using var monitor = result;
+                var name = (monitor["Caption"] as string) ?? (monitor["Name"] as string);
+                if (!string.IsNullOrWhiteSpace(name) && !string.Equals(name, "Generic PnP Monitor", StringComparison.OrdinalIgnoreCase))
+                    names.Add(name);
             }
         }
-        catch (Exception ex)
+        catch
         {
-            _logger.LogError(ex, "Error getting display name");
+            // WMI unavailable or restricted — callers fall back to the raw device path string.
         }
 
-        return null;
+        return names;
     }
 }
 
 internal static class NativeMethods
 {
-    public const uint ErrorSuccess = 0;
-
-    [Flags]
-    public enum QueryDisplayConfigFlags : uint
-    {
-        AllPaths = 1,
-        OnlyActivePaths = 2
-    }
-
-    [Flags]
-    public enum DisplayConfigPathInfoFlags : uint
-    {
-        PathActive = 1,
-        PathPrimary = 4
-    }
-
-    public enum DisplayConfigModeInfoType : uint
-    {
-        Source = 1,
-        Target = 2
-    }
-
-    public enum DisplayConfigVideoOutputTechnology : uint
-    {
-        Other = 0xffffffff,
-        Hdmi = 0,
-        Analog = 1,
-        Dvi = 2,
-        Lvds = 3,
-        Dport = 4,
-        Sdtvdongle = 5
-    }
-
-    public enum DisplayConfigDeviceInfoType : uint
-    {
-        GetSourceName = 1,
-        GetTargetName = 2,
-        GetTargetPreferredMode = 3,
-        GetAdapterName = 4,
-        GetMonitorDescriptor = 5,
-        GetMonitorColorSpace = 6
-    }
-
     [StructLayout(LayoutKind.Sequential)]
-    public struct Luid
+    public struct Rect
     {
-        public uint LowPart;
-        public int HighPart;
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
     }
 
-    [StructLayout(LayoutKind.Sequential)]
-    public struct Point
-    {
-        public uint X;
-        public uint Y;
-    }
+    public delegate bool MonitorEnumProc(IntPtr hMonitor, IntPtr hdcMonitor, ref Rect lprcMonitor, IntPtr dwData);
 
-    [StructLayout(LayoutKind.Sequential)]
-    public struct Size
-    {
-        public uint CX;
-        public uint CY;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct Rational
-    {
-        public uint Numerator;
-        public uint Denominator;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct DisplayConfigVideoSignalInfo
-    {
-        public Rational PixelRate;
-        public Rational HSyncFreq;
-        public Rational VSyncFreq;
-        public Size ActiveSize;
-        public Size TotalSize;
-        public uint VideoStandard;
-        public DisplayConfigScanLineOrdering ScanLineOrdering;
-    }
-
-    public enum DisplayConfigScanLineOrdering : uint
-    {
-        Progressive = 1,
-        Interlaced = 2
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct DisplayConfigTargetMode
-    {
-        public DisplayConfigVideoSignalInfo TargetVideoSignalInfo;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct DisplayConfigSourceMode
-    {
-        public uint Width;
-        public uint Height;
-        public DisplayConfigPixelFormat PixelFormat;
-        public Point Position;
-    }
-
-    public enum DisplayConfigPixelFormat : uint
-    {
-        Format8bit = 1,
-        Format16bit = 2,
-        Format32bit = 3,
-        FormatNative = 4
-    }
-
-    [StructLayout(LayoutKind.Explicit)]
-    public struct DisplayConfigModeInfoUnion
-    {
-        [FieldOffset(0)]
-        public DisplayConfigSourceMode SourceMode;
-
-        [FieldOffset(0)]
-        public DisplayConfigTargetMode TargetMode;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct DisplayConfigModeInfo
-    {
-        public DisplayConfigModeInfoType InfoType;
-        public uint Id;
-        public Luid AdapterId;
-        public DisplayConfigModeInfoUnion ModeInfo;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct DisplayConfigRotation
-    {
-        public uint Rotation;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct DisplayConfigTargetDeviceNameFlags
-    {
-        public uint FriendlyNameFromEDID;
-        public uint Edid;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct DisplayConfigDeviceInfoHeader
-    {
-        public DisplayConfigDeviceInfoType Type;
-        public uint Size;
-        public Luid AdapterId;
-        public uint Id;
-    }
+    public const uint MonitorInfoFPrimary = 1;
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    public struct DisplayConfigTargetDeviceName
+    public struct MonitorInfoEx
     {
-        public DisplayConfigDeviceInfoHeader Header;
-        public DisplayConfigTargetDeviceNameFlags Flags;
-        public DisplayConfigVideoOutputTechnology OutputTechnology;
-        public ushort EdidConnectorType;
-        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 64)]
-        public string MonitorFriendlyDeviceName;
-        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
-        public string MonitorDevicePath;
+        public uint cbSize;
+        public Rect rcMonitor;
+        public Rect rcWork;
+        public uint dwFlags;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+        public string szDevice;
     }
 
-    [StructLayout(LayoutKind.Sequential)]
-    public struct DisplayConfigPathSourceInfo
+    public const int EnumCurrentSettings = -1;
+
+    // Standard Win32 DEVMODE layout. dmPositionX/dmPositionY/dmDisplayOrientation/
+    // dmDisplayFixedOutput occupy the same offsets the real struct's union gives to printer-only
+    // fields (dmOrientation/dmPaperSize/dmPaperLength/dmPaperWidth) — that's correct for display
+    // devices, which is the only use here.
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    public struct DevMode
     {
-        public Luid AdapterId;
-        public uint Id;
-        public uint ModeInfoIdx;
-        public DisplayConfigPathInfoFlags StatusFlags;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+        public string dmDeviceName;
+        public short dmSpecVersion;
+        public short dmDriverVersion;
+        public short dmSize;
+        public short dmDriverExtra;
+        public int dmFields;
+        public int dmPositionX;
+        public int dmPositionY;
+        public int dmDisplayOrientation;
+        public int dmDisplayFixedOutput;
+        public short dmColor;
+        public short dmDuplex;
+        public short dmYResolution;
+        public short dmTTOption;
+        public short dmCollate;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+        public string dmFormName;
+        public short dmLogPixels;
+        public int dmBitsPerPel;
+        public int dmPelsWidth;
+        public int dmPelsHeight;
+        public int dmDisplayFlags;
+        public int dmDisplayFrequency;
+        public int dmICMMethod;
+        public int dmICMIntent;
+        public int dmMediaType;
+        public int dmDitherType;
+        public int dmReserved1;
+        public int dmReserved2;
+        public int dmPanningWidth;
+        public int dmPanningHeight;
     }
 
-    public enum DisplayConfigScaling : uint
-    {
-        Identity = 1,
-        Centered = 2,
-        Stretched = 3,
-        AspectRatioCenteredMax = 4,
-        Custom = 5,
-        Preferred = 128
-    }
+    [DllImport("user32.dll")]
+    public static extern bool EnumDisplayMonitors(IntPtr hdc, IntPtr lprcClip, MonitorEnumProc lpfnEnum, IntPtr dwData);
 
-    // Layout matches the real Win32 DISPLAYCONFIG_PATH_TARGET_INFO exactly (52 bytes:
-    // 8+4+4+4+4+4+8+4+4+4). The previous version of this struct was missing scaling,
-    // scanLineOrdering, and targetAvailable entirely, and used the wrong (mismatched-size)
-    // types for the fields at those offsets, making it 40 bytes instead of 52. QueryDisplayConfig
-    // writes pathCount elements of the real 52-byte struct into an array the CLR allocates and
-    // sizes based on Marshal.SizeOf<DisplayConfigPathInfo>() — with the old 40-byte TargetInfo,
-    // that buffer was 12 bytes too small per path, so Windows wrote past the end of the array on
-    // every call. That's a genuine heap buffer overflow, and it's exactly what crashed the app
-    // with STATUS_HEAP_CORRUPTION (0xc0000374) the first time this code ever actually ran (the
-    // Displays page was a stub with no real caller until it was wired up).
-    [StructLayout(LayoutKind.Sequential)]
-    public struct DisplayConfigPathTargetInfo
-    {
-        public Luid AdapterId;
-        public uint Id;
-        public uint ModeInfoIdx;
-        public DisplayConfigVideoOutputTechnology OutputTechnology;
-        public DisplayConfigRotation Rotation;
-        public DisplayConfigScaling Scaling;
-        public Rational RefreshRate;
-        public DisplayConfigScanLineOrdering ScanLineOrdering;
-        public int TargetAvailable; // Win32 BOOL
-        public uint StatusFlags;
-    }
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    public static extern bool GetMonitorInfo(IntPtr hMonitor, ref MonitorInfoEx lpmi);
 
-    [StructLayout(LayoutKind.Sequential)]
-    public struct DisplayConfigPathInfo
-    {
-        public DisplayConfigPathSourceInfo SourceInfo;
-        public DisplayConfigPathTargetInfo TargetInfo;
-        public DisplayConfigPathInfoFlags Flags;
-    }
-
-    [DllImport("user32.dll", SetLastError = true)]
-    public static extern uint GetDisplayConfigBufferSizes(
-        QueryDisplayConfigFlags flags,
-        out uint numPathArrayElements,
-        out uint numModeInfoArrayElements);
-
-    [DllImport("user32.dll", SetLastError = true)]
-    public static extern uint QueryDisplayConfig(
-        QueryDisplayConfigFlags flags,
-        ref uint numPathArrayElements,
-        DisplayConfigPathInfo[] pathArray,
-        ref uint numModeInfoArrayElements,
-        DisplayConfigModeInfo[] modeInfoArray,
-        IntPtr currentTopologyId);
-
-    [DllImport("user32.dll", SetLastError = true)]
-    public static extern uint DisplayConfigGetDeviceInfo(ref DisplayConfigDeviceInfoHeader deviceInfo);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    public static extern bool EnumDisplaySettings(string deviceName, int modeNum, ref DevMode devMode);
 }
