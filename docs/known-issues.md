@@ -1,37 +1,48 @@
 # Known Issues
 
-## GUI: Seats, Displays, Input Isolation, and Audio pages are non-functional stubs
+## GUI: Displays, Input Isolation, and Audio pages are non-functional stubs
 
-**Status:** open, tracked here. Not fixed as part of the ASTER-parity documentation pass — this is a separate GUI feature-development effort.
+**Status:** open, tracked here. Devices, Seats, and Assign CPU Cores have since been wired to real backends (see below) — Displays, Input Isolation, and Audio have not.
 
-**Found by:** launching the built `OpenMultiSeat.GUI.exe` and screenshotting each nav page.
+**Found by:** launching the built `OpenMultiSeat.GUI.exe` and screenshotting each nav page. Devices, Seats, and Assign CPU Cores were fixed in follow-up work; see their own status rows below rather than the original screenshots, which now describe a stale state for those three.
 
 ### What's actually there today
 
-Each of these four pages currently renders as: a page title, a one-line static description, and a single button whose *only* behavior is to pop a generic `MessageBox.Show("Configure <X>")` info dialog — the box literally repeats the button's own label back at the user and does nothing else. There is no data grid, no form, no binding to the backend managers that already exist for each of these areas (`SeatManager`, `DisplayManager`/`DisplayEnumerator`, `InputIsolationService`, the audio manager in `OpenMultiSeat.Audio`).
+The three remaining pages each render as: a page title, a one-line static description, and a single button whose *only* behavior is to pop a generic `MessageBox.Show("Configure <X>")` info dialog — the box literally repeats the button's own label back at the user and does nothing else. There is no data grid, no form, no binding to the backend managers that already exist for each of these areas (`DisplayManager`/`DisplayEnumerator`, `InputIsolationService`, the audio manager in `OpenMultiSeat.Audio`).
 
-Compare this to the **Devices** page, which is fully implemented: a real `DataGrid` (Device Name, Hardware ID, Vendor ID, Product ID, First Seen columns) wired to `HidDeviceEnumerator`/`DevicePersistence`, with working Scan/Refresh/Export Report buttons.
+Compare this to **Devices**, **Seats**, and **Assign CPU Cores**, which are genuinely wired up: Devices has a real `DataGrid` (Device Name, Hardware ID, Vendor ID, Product ID, First Seen columns) bound to `HidDeviceEnumerator`/`DevicePersistence` with working Scan/Refresh/Export Report buttons; Seats has a real seat list with working Create/Delete, bound to `SeatManager`/`SeatPersistence`; Assign CPU Cores (reachable from the Settings page) reads and writes real `Seat.CpuCoreAffinity` data via `ISeatPersistence`.
 
-| Page | Screenshot | Real backend exists? | GUI wired to it? |
-|---|---|---|---|
-| Devices | ![Devices page](images/screenshots/devices-page-1.png) | ✅ `OpenMultiSeat.Devices` | ✅ Yes |
-| Seats | ![Seats page stub](images/screenshots/seats-page-stub.png) | ✅ `OpenMultiSeat.Core.SeatManager` | ❌ Stub only |
-| Displays | ![Displays page stub](images/screenshots/displays-page-stub.png) | ✅ `OpenMultiSeat.Displays` | ❌ Stub only |
-| Input Isolation | ![Input Isolation page stub](images/screenshots/input-isolation-page-stub.png) | ✅ `OpenMultiSeat.InputIsolation` | ❌ Stub only |
-| Audio | ![Audio page stub](images/screenshots/audio-page-stub.png) | ✅ `OpenMultiSeat.Audio` | ❌ Stub only |
+| Page | Real backend exists? | GUI wired to it? |
+|---|---|---|
+| Devices | ✅ `OpenMultiSeat.Devices` | ✅ Yes |
+| Seats (list/create/delete) | ✅ `OpenMultiSeat.Core.SeatManager` | ✅ Yes |
+| Assign CPU Cores | ✅ `OpenMultiSeat.Core.CpuAffinityProvider` | ✅ Yes |
+| Seats → device/display/audio assignment | ✅ backend managers exist | ❌ Stub only — Seats page can create/delete a seat, but there is still no UI to assign a device, display, or audio endpoint to one |
+| Displays | ✅ `OpenMultiSeat.Displays` | ❌ Stub only |
+| Input Isolation | ✅ `OpenMultiSeat.InputIsolation` | ❌ Stub only |
+| Audio | ✅ `OpenMultiSeat.Audio` | ❌ Stub only |
+
+**Caveat for the three "wired" pages, same as before:** they talk to `ISeatPersistence`/`IDevicePersistence` directly, not over `OpenMultiSeat.IPC` — there is still no GUI page with real IPC wiring to the Service.
+
+Screenshots of the three still-broken pages (still accurate — nothing changed on these):
+
+| Displays | Input Isolation | Audio |
+|---|---|---|
+| ![Displays page stub](images/screenshots/displays-page-stub.png) | ![Input Isolation page stub](images/screenshots/input-isolation-page-stub.png) | ![Audio page stub](images/screenshots/audio-page-stub.png) |
+
+The original Devices/Seats screenshots (`images/screenshots/devices-page-1.png`, `devices-page-2.png`, `seats-page-stub.png`) are kept in the repo for history but no longer embedded here — they show a state that's since been fixed.
 
 ### Where the code lives
 
-- `src/OpenMultiSeat.GUI/Pages/SeatsPage.xaml(.cs)`
+- `src/OpenMultiSeat.GUI/Pages/SeatsPage.xaml(.cs)` — ✅ list/create/delete now real; device/display/audio assignment still missing
+- `src/OpenMultiSeat.GUI/Windows/AssignCpuCoresWindow.xaml(.cs)` — ✅ real
 - `src/OpenMultiSeat.GUI/Pages/DisplaysPage.xaml(.cs)`
 - `src/OpenMultiSeat.GUI/Pages/InputPage.xaml(.cs)`
 - `src/OpenMultiSeat.GUI/Pages/AudioPage.xaml(.cs)`
 
-### What each page needs to become real (summary — see the matching [control-panel](control-panel/README.md) pages for the ASTER-equivalent UX each should aim for)
+### What each remaining page needs to become real (summary — see the matching [control-panel](control-panel/README.md) pages for the ASTER-equivalent UX each should aim for)
 
-- **Seats page** — a seat list/grid, "Add Seat"/"Remove Seat", and per-seat device/display/audio assignment (equivalent to ASTER's [Devices to Workplace(s) Assignment](control-panel/devices-to-workplace-assignment.md), [Workplace Tab Settings](control-panel/workplace-tab-settings.md), and [Confirm Device Destination](control-panel/confirm-device-destination.md) windows combined) — bound to `SeatManager` and `SeatConfiguration` over the existing IPC channel.
+- **Seats page — device/display/audio assignment** — now that a seat can be created, the next piece is a per-seat assignment UI (equivalent to ASTER's [Devices to Workplace(s) Assignment](control-panel/devices-to-workplace-assignment.md) and [Confirm Device Destination](control-panel/confirm-device-destination.md) windows combined) — bound to `SeatManager.AssignDeviceToSeatAsync`, which already exists and is untouched by the GUI.
 - **Displays page** — a display list (from `DisplayEnumerator.EnumerateDisplays()`) with a seat-assignment dropdown per monitor, equivalent to ASTER's [Assigning Video Outputs](control-panel/assigning-video-outputs.md) window.
 - **Input Isolation page** — a device list with per-seat binding, equivalent to ASTER's [Input Devices Switch](control-panel/input-devices-switch.md) window, bound to `InputIsolationService`.
 - **Audio page** — a per-seat audio endpoint picker, bound to `OpenMultiSeat.Audio`'s enumerator (no direct ASTER equivalent window found in the wiki structure the docs are modeled on; ASTER handles this within its device/workplace assignment flow).
-
-This is intentionally scoped as documentation only in this pass. Implementing the four pages is real GUI + IPC-plumbing work and should be planned as its own task.

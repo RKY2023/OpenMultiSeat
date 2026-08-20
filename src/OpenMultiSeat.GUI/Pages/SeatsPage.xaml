@@ -3,10 +3,36 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Title="Seats">
     <Grid Margin="20">
-        <StackPanel>
-            <TextBlock Text="Seats" FontSize="20" FontWeight="Bold" Margin="0,0,0,20"/>
-            <TextBlock Text="Configuration page for Seats" FontSize="12" Foreground="#666666"/>
-            <Button Content="Configure Seats" Click="OnConfigure" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,10,0,0"/>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="Seats" FontSize="20" FontWeight="Bold" Margin="0,0,0,10"/>
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,15">
+            <Button Content="Create Seat..." Click="OnCreateSeat" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,0,10,0"/>
+            <Button Content="Delete Selected" Click="OnDeleteSeat" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,0,10,0"/>
+            <Button Content="Refresh" Click="OnRefresh" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,0,10,0"/>
+            <TextBlock x:Name="StatusText" VerticalAlignment="Center" Foreground="#666666" FontSize="12"/>
         </StackPanel>
+
+        <Grid Grid.Row="2">
+            <TextBlock x:Name="EmptyStateText" Text="No seats yet. Click &quot;Create Seat...&quot; to add one."
+                       Foreground="#888888" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center"
+                       Visibility="Collapsed"/>
+            <DataGrid x:Name="SeatsGrid" AutoGenerateColumns="False" IsReadOnly="True"
+                      SelectionMode="Single" Background="White" BorderBrush="#CCCCCC">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="200"/>
+                    <DataGridTextColumn Header="Windows User" Binding="{Binding WindowsUserDisplay}" Width="150"/>
+                    <DataGridTextColumn Header="Devices" Binding="{Binding DeviceCount}" Width="80"/>
+                    <DataGridTextColumn Header="Displays" Binding="{Binding DisplayCount}" Width="80"/>
+                    <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="100"/>
+                    <DataGridCheckBoxColumn Header="Enabled" Binding="{Binding Enabled}" Width="70"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Grid>
     </Grid>
 </Page>

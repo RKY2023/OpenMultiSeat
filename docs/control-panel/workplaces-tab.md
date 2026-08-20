@@ -30,17 +30,14 @@ If a display or device is hot-plugged while ASTER is running, a **"Configuration
 
 ## OpenMultiSeat status
 
-**🚧 Stub** — placeholder only today. See [Known Issues](../known-issues.md).
+**🚧 Partially implemented** — see [Known Issues](../known-issues.md).
 
-This maps to OpenMultiSeat's **Seats** page, which currently shows only a heading, a one-line description, and a single "Configure Seats" button that pops a generic message box — there is no real bound UI yet, even though the backend it needs already exists.
+This maps to OpenMultiSeat's **Seats** page. Seat management itself is now real: a data grid lists every configured `Seat` (name, Windows user, device/display counts, status, enabled), with working **Create Seat…** and **Delete Selected** actions bound to `ISeatManager`/`SeatPersistence`. What's still missing is everything ASTER's Workplaces tab uses a seat list *for* — assigning hardware to a seat:
 
-![OpenMultiSeat Seats page stub](../images/screenshots/seats-page-stub.png)
+- No unassigned/common-devices device pool or per-seat assign/unassign controls yet, even though the backend it needs (`IDevicePersistence`, `HidDeviceEnumerator`, `SeatManager.AssignDeviceToSeatAsync`) already exists and is exercised correctly by the Devices page.
+- No display/audio assignment UI (`IDisplayEnumerator`/`DisplayEnumerator`, `AudioDevice`) wiring into a seat.
+- No per-seat context menu actions yet — rename seat, assign a Windows user (see [User Account for Workstation](user-account-for-workstation.md)), start/restart the seat's session via `OpenMultiSeat.Sessions`' `SessionManager`.
 
-To reach parity with ASTER's Workplaces tab, this page needs:
-- An unassigned/common-devices device pool, backed by `IDevicePersistence` and the devices already discovered by `HidDeviceEnumerator` (visible today on the Devices page).
-- A per-seat data grid or panel list (one entry per `Seat`) showing that seat's assigned input devices, display(s), and audio device, built from the `Seat`, `InputDevice`, `Display`, and `AudioDevice` Core models.
-- Assign/unassign controls (drag-and-drop or pickers) wiring devices, displays (`IDisplayEnumerator` / `DisplayEnumerator`), and audio endpoints into a `SeatConfiguration`.
-- Per-seat actions equivalent to ASTER's context menu — rename seat, assign a Windows user (see [User Account for Workstation](user-account-for-workstation.md)), and start/restart the seat's session via `OpenMultiSeat.Sessions`' `SessionManager`.
-- A tab-wide settings/tools menu equivalent to ASTER's hamburger list above — most notably [Assign CPU Cores](assign-cpu-cores.md), which has no OpenMultiSeat equivalent of any kind today (device/display/audio isolation exist as concepts; CPU-level isolation between seats does not).
+[Assign CPU Cores](assign-cpu-cores.md) — one item from ASTER's tab-wide hamburger menu above — is also implemented, reachable from the Settings page rather than from this tab (there's no tab-wide hamburger menu here yet).
 
 Per-workplace IP-address assignment ([IP Address for the Workplace](ip-address-for-workplace.md)) remains planned but unscheduled, since OpenMultiSeat currently targets local seats on a single PC rather than networked workplaces.
