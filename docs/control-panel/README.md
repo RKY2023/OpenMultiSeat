@@ -17,7 +17,7 @@ Each page states **what ASTER's equivalent does**, then **OpenMultiSeat's status
 |---|---|---|
 | [Main Window of ASTER Control Panel](aster-control-panel-main-window.md) | Main window | ✅ Implemented |
 | ["General Settings" Tab](general-settings-tab.md) | General Settings tab | ✅ Implemented |
-| ["Workplaces" Tab](workplaces-tab.md) | Workplaces tab | 🚧 Partial — seat list/create/delete, device assignment, display assignment, and audio assignment all real; no unified hardware-pool view yet |
+| ["Workplaces" Tab](workplaces-tab.md) | Workplaces tab | 🚧 Partial — seat list/create/delete, account config, and device/display/audio assignment all real, with a consolidated per-seat "Configure…" view; no shared cross-seat hardware pool yet |
 | ["About" Tab](about-tab.md) | About tab | ✅ Implemented |
 
 ## Licensing & Activation (ASTER-only — no equivalent needed in OpenMultiSeat)

@@ -1,8 +1,10 @@
 using System.Windows;
 using System.Windows.Controls;
 using Microsoft.Extensions.Logging;
+using OpenMultiSeat.Audio;
 using OpenMultiSeat.Core;
 using OpenMultiSeat.Devices;
+using OpenMultiSeat.Displays;
 using OpenMultiSeat.GUI.Windows;
 
 namespace OpenMultiSeat.GUI.Pages;
@@ -17,6 +19,9 @@ namespace OpenMultiSeat.GUI.Pages;
 public partial class SeatsPage : Page
 {
     private readonly ISeatManager _seatManager;
+    private readonly IDevicePersistence _devicePersistence;
+    private readonly IDisplayEnumerator _displayEnumerator;
+    private readonly IAudioManager _audioManager;
     private IReadOnlyList<Seat> _seats = [];
 
     public SeatsPage()
@@ -24,9 +29,14 @@ public partial class SeatsPage : Page
         InitializeComponent();
 
         var seatPersistence = new SeatPersistence(GuiLoggerFactory.Instance.CreateLogger<SeatPersistence>());
-        var devicePersistence = new DevicePersistence(GuiLoggerFactory.Instance.CreateLogger<DevicePersistence>());
+        _devicePersistence = new DevicePersistence(GuiLoggerFactory.Instance.CreateLogger<DevicePersistence>());
         _seatManager = new SeatManager(
-            GuiLoggerFactory.Instance.CreateLogger<SeatManager>(), seatPersistence, devicePersistence);
+            GuiLoggerFactory.Instance.CreateLogger<SeatManager>(), seatPersistence, _devicePersistence);
+        _displayEnumerator = new DisplayEnumerator(GuiLoggerFactory.Instance.CreateLogger<DisplayEnumerator>());
+
+        var audioEnumerator = new AudioDeviceEnumerator(GuiLoggerFactory.Instance.CreateLogger<AudioDeviceEnumerator>());
+        var audioPersistence = new AudioPersistence(GuiLoggerFactory.Instance.CreateLogger<AudioPersistence>());
+        _audioManager = new AudioManager(GuiLoggerFactory.Instance.CreateLogger<AudioManager>(), audioEnumerator, _seatManager, audioPersistence);
 
         Loaded += async (_, _) => await LoadAsync();
     }
@@ -103,6 +113,28 @@ public partial class SeatsPage : Page
         {
             await LoadAsync();
         }
+    }
+
+    private async void OnConfigureSeat(object sender, RoutedEventArgs e)
+    {
+        if (SeatsGrid.SelectedItem is not SeatRow row)
+        {
+            MessageBox.Show("Select a seat first.", "Seats", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var window = new SeatDetailsWindow(_seatManager, _devicePersistence, _displayEnumerator, _audioManager, row.Seat)
+        {
+            Owner = Window.GetWindow(this)
+        };
+        window.ShowDialog();
+        await LoadAsync();
+    }
+
+    private void OnSeatsGridDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (SeatsGrid.SelectedItem is SeatRow)
+            OnConfigureSeat(sender, e);
     }
 
     /// <summary>Flattens a Seat's list-valued fields into display-ready properties for the grid.</summary>

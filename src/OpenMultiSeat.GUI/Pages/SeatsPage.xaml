@@ -14,6 +14,7 @@
         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,15">
             <Button Content="Create Seat..." Click="OnCreateSeat" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,0,10,0"/>
             <Button Content="Delete Selected" Click="OnDeleteSeat" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,0,10,0"/>
+            <Button Content="Configure..." Click="OnConfigureSeat" Background="#2D6CDF" Foreground="White" Padding="12,8" Margin="0,0,10,0"/>
             <Button Content="User Account..." Click="OnUserAccount" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,0,10,0"/>
             <Button Content="Refresh" Click="OnRefresh" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,0,10,0"/>
             <TextBlock x:Name="StatusText" VerticalAlignment="Center" Foreground="#666666" FontSize="12"/>
@@ -24,7 +25,8 @@
                        Foreground="#888888" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center"
                        Visibility="Collapsed"/>
             <DataGrid x:Name="SeatsGrid" AutoGenerateColumns="False" IsReadOnly="True"
-                      SelectionMode="Single" Background="White" BorderBrush="#CCCCCC">
+                      SelectionMode="Single" Background="White" BorderBrush="#CCCCCC"
+                      MouseDoubleClick="OnSeatsGridDoubleClick">
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="200"/>
                     <DataGridTextColumn Header="Windows User" Binding="{Binding WindowsUserDisplay}" Width="150"/>
