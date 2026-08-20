@@ -17,7 +17,7 @@ Each page states **what ASTER's equivalent does**, then **OpenMultiSeat's status
 |---|---|---|
 | [Main Window of ASTER Control Panel](aster-control-panel-main-window.md) | Main window | ✅ Implemented |
 | ["General Settings" Tab](general-settings-tab.md) | General Settings tab | ✅ Implemented |
-| ["Workplaces" Tab](workplaces-tab.md) | Workplaces tab | 🚧 Partial — seat list/create/delete, device assignment, and display assignment real, audio assignment still stub |
+| ["Workplaces" Tab](workplaces-tab.md) | Workplaces tab | 🚧 Partial — seat list/create/delete, device assignment, display assignment, and audio assignment all real; no unified hardware-pool view yet |
 | ["About" Tab](about-tab.md) | About tab | ✅ Implemented |
 
 ## Licensing & Activation (ASTER-only — no equivalent needed in OpenMultiSeat)
@@ -62,6 +62,6 @@ Each page states **what ASTER's equivalent does**, then **OpenMultiSeat's status
 ## Status summary
 
 - **4 pages fully implemented** (Main Window, General Settings tab, About tab, Assign CPU Cores)
-- **5 pages are stubs or partially wired** — real backend exists; Workplaces tab, Devices to Workplace(s) Assignment, and Assigning Video Outputs now have real seat CRUD, device assignment, and display assignment, but audio assignment (and the other 2 pages below) remain unwired (see [Known Issues](../known-issues.md))
+- **5 pages are stubs or partially wired** — real backend exists; Workplaces tab, Devices to Workplace(s) Assignment, and Assigning Video Outputs now have real seat CRUD, device assignment, display assignment, and audio assignment, but Workplace Tab Settings and Input Devices Switch (and Confirm Device Destination, now Planned) remain unwired (see [Known Issues](../known-issues.md))
 - **10 pages are planned**, no implementation yet
 - **9 pages don't apply today** — 7 pure licensing/activation pages plus Proxy Server Setup and Support Request, which currently have no OpenMultiSeat need but could become planned items later (see [`../user-manual/licensing-model.md`](../user-manual/licensing-model.md))
