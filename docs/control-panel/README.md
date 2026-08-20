@@ -17,7 +17,7 @@ Each page states **what ASTER's equivalent does**, then **OpenMultiSeat's status
 |---|---|---|
 | [Main Window of ASTER Control Panel](aster-control-panel-main-window.md) | Main window | ✅ Implemented |
 | ["General Settings" Tab](general-settings-tab.md) | General Settings tab | ✅ Implemented |
-| ["Workplaces" Tab](workplaces-tab.md) | Workplaces tab | 🚧 Partial — seat list/create/delete, account config, and device/display/audio assignment all real, with a consolidated per-seat "Configure…" view; no shared cross-seat hardware pool yet |
+| ["Workplaces" Tab](workplaces-tab.md) | Workplaces tab | 🚧 Partial — seat list/create/delete, account config, and device/display/audio assignment all real, with both a per-seat "Configure…" view and a shared cross-seat **System** page |
 | ["About" Tab](about-tab.md) | About tab | ✅ Implemented |
 
 ## Licensing & Activation (ASTER-only — no equivalent needed in OpenMultiSeat)
@@ -36,9 +36,9 @@ Each page states **what ASTER's equivalent does**, then **OpenMultiSeat's status
 
 | Page | ASTER equivalent | Status |
 |---|---|---|
-| [The 'User Account for Workstation' Window](user-account-for-workstation.md) | User Account for Workstation | 🚧 Partial — real account/password config with DPAPI-encrypted storage, no auto-login/session-launch wiring yet |
+| [The 'User Account for Workstation' Window](user-account-for-workstation.md) | User Account for Workstation | 🚧 Partial — real account/password config with DPAPI-encrypted storage; verified credential-based process launch (`CreateProcessWithLogonW`) via "Test Launch…", not yet wired to automatic seat start |
 | ["Workplace Tab Settings" Window](workplace-tab-settings.md) | Workplace Tab Settings | 🚧 Stub |
-| ["Devices to Workplace(s) Assignment" Window](devices-to-workplace-assignment.md) | Devices to Workplace(s) Assignment | 🚧 Partial — exclusive single-seat assignment works, no "To All" shared mode |
+| ["Devices to Workplace(s) Assignment" Window](devices-to-workplace-assignment.md) | Devices to Workplace(s) Assignment | 🚧 Partial — exclusive single-seat assignment works (keyboard/mouse, plus camera/USB/Bluetooth as ownership records), no "To All" shared mode |
 | ["Confirm Device Destination" Window](confirm-device-destination.md) | Confirm Device Destination | 📋 Planned |
 | ["Assigning Video Outputs" Window](assigning-video-outputs.md) | Assigning Video Outputs | 🚧 Partial — real scan + assignment, no manual output remapping or clone toggle |
 | ["Input Devices Switch" Window](input-devices-switch.md) | Input Devices Switch | 🚧 Stub |

@@ -1,7 +1,9 @@
 using System.Management;
 using System.Windows;
 using System.Windows.Controls;
+using Microsoft.Extensions.Logging;
 using OpenMultiSeat.Core;
+using OpenMultiSeat.Sessions;
 
 namespace OpenMultiSeat.GUI.Windows;
 
@@ -104,6 +106,15 @@ public partial class UserAccountWindow : Window
             PasswordBox.Password = string.Empty;
             PasswordConfirmBox.Password = string.Empty;
         }
+
+        // The password itself is never redisplayed (it's decryptable, but showing recovered
+        // plaintext back in a form field is its own small security regression) — instead this
+        // tells the admin outright that one IS already saved, since an empty-looking box after
+        // reopening the dialog otherwise reads as "the password wasn't remembered" when it
+        // actually was (leaving both fields blank on Save intentionally keeps the existing one).
+        PasswordLabelText.Text = !displayLoginDialogSelected && !string.IsNullOrEmpty(_seat.EncryptedPassword)
+            ? "Password (already saved — leave blank to keep it, or enter a new one to replace it)"
+            : "Password";
     }
 
     private async void OnOk(object sender, RoutedEventArgs e)
@@ -176,6 +187,75 @@ public partial class UserAccountWindow : Window
         catch (Exception ex)
         {
             ShowError($"Couldn't save the account settings: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Actually exercises CreateProcessWithLogonW with the currently-entered (not yet necessarily
+    /// saved) credentials, launching Notepad — a safe, universally-available, visually obvious
+    /// target — as proof the stored login genuinely works, rather than leaving "does this
+    /// credential actually work" untestable. This is a real launch, not a simulation: success
+    /// means a real Notepad window opens running as that Windows user.
+    /// </summary>
+    private async void OnTestLaunch(object sender, RoutedEventArgs e)
+    {
+        if (LocalRadio.IsChecked != true || LocalAccountComboBox.SelectedItem as string == DisplayLoginDialogSentinel)
+        {
+            if (DomainRadio.IsChecked != true)
+            {
+                MessageBox.Show("Choose a specific account (not \"Display login dialog\") first.", "Test Launch", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+        }
+
+        var username = DomainRadio.IsChecked == true ? DomainUserTextBox.Text.Trim() : LocalAccountComboBox.SelectedItem as string;
+        var domain = DomainRadio.IsChecked == true ? DomainTextBox.Text.Trim() : null;
+        var password = PasswordBox.Password;
+
+        if (string.IsNullOrEmpty(password))
+        {
+            MessageBox.Show(
+                "Enter the password above first (it's needed for the test even if you've already saved one — " +
+                "the saved value is encrypted and isn't redisplayed here).",
+                "Test Launch", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        if (string.IsNullOrEmpty(username))
+        {
+            MessageBox.Show("No account selected.", "Test Launch", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        TestLaunchButton.IsEnabled = false;
+        TestLaunchButton.Content = "Launching...";
+
+        try
+        {
+            var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
+            var sessionEnumerator = new SessionEnumerator(loggerFactory.CreateLogger<SessionEnumerator>());
+            var sessionManager = new SessionManager(
+                loggerFactory.CreateLogger<SessionManager>(), sessionEnumerator, new CpuAffinityProvider());
+
+            var pid = await sessionManager.LaunchProcessWithCredentialsAsync(
+                username, domain, password, @"C:\Windows\System32\notepad.exe");
+
+            MessageBox.Show(
+                $"Launched Notepad as {(domain != null ? $"{domain}\\{username}" : username)} — PID {pid}. " +
+                "If a Notepad window didn't appear on your screen, it may have opened in a different session " +
+                "than the one you're viewing (this launches the process, it doesn't create an isolated seat desktop).",
+                "Test Launch — Success", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                $"Launch failed: {ex.Message}",
+                "Test Launch — Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        finally
+        {
+            TestLaunchButton.IsEnabled = true;
+            TestLaunchButton.Content = "Test Launch (Notepad)...";
         }
     }
 

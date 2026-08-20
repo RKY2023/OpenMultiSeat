@@ -49,6 +49,8 @@
                     Style="{StaticResource NavButtonStyle}" Padding="15" Margin="0,0,0,1" FontSize="12"/>
                 <Button x:Name="SeatsBtn" Content="Seats" Click="OnNavigateSeats"
                     Style="{StaticResource NavButtonStyle}" Padding="15" Margin="0,0,0,1" FontSize="12"/>
+                <Button x:Name="SystemBtn" Content="System" Click="OnNavigateSystem"
+                    Style="{StaticResource NavButtonStyle}" Padding="15" Margin="0,0,0,1" FontSize="12"/>
                 <Button x:Name="DisplaysBtn" Content="Displays" Click="OnNavigateDisplays"
                     Style="{StaticResource NavButtonStyle}" Padding="15" Margin="0,0,0,1" FontSize="12"/>
                 <Button x:Name="InputBtn" Content="Input Isolation" Click="OnNavigateInput"

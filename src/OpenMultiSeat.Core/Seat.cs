@@ -34,6 +34,14 @@ public sealed class Seat
     public string? AudioCaptureId { get; set; }
 
     /// <summary>
+    /// Non-input, non-display, non-audio devices (cameras, USB controllers/hubs, Bluetooth
+    /// devices/radios) recorded as belonging to this seat. This is an ownership/organizational
+    /// record only — unlike KeyboardIds/MouseIds there's no InputIsolation-style routing that
+    /// actually restricts a camera or USB device to one seat's session; it just tracks intent.
+    /// </summary>
+    public List<string> OtherDeviceIds { get; set; } = [];
+
+    /// <summary>
     /// Logical CPU core indices this seat's processes are restricted to.
     /// Empty means no restriction (the seat may use any core).
     /// </summary>

@@ -12,7 +12,11 @@ The one remaining page renders as: a page title, a one-line static description, 
 
 Compare this to **Devices**, **Seats**, **Displays**, **Assign CPU Cores**, and **Audio**, which are genuinely wired up: Devices has a real `DataGrid` (Device Name, Class, Hardware ID, Vendor ID, Product ID, Assigned To, First Seen columns) bound to `HidDeviceEnumerator`/`GeneralDeviceEnumerator`/`DevicePersistence` with working Scan/Refresh/Export Report/Assign to Seat/Unassign buttons — the Class column and `GeneralDeviceEnumerator` (a WMI `Win32_PnPEntity` scan for cameras, USB controllers/hubs, and Bluetooth devices/radios, shown for visibility alongside the Raw-Input-detected keyboards/mice) were added after a follow-up request for broader device coverage; Seats has a real seat list with working Create/Delete, bound to `SeatManager`/`SeatPersistence`; Displays has a real scan (`DisplayEnumerator`, via `EnumDisplayMonitors`) with working Assign to Seat/Unassign; Assign CPU Cores (reachable from the Settings page) reads and writes real `Seat.CpuCoreAffinity` data via `ISeatPersistence`; Audio has a real scan of Windows Core Audio endpoints (speakers, microphones, Bluetooth audio — anything Windows itself recognizes as a playback/recording device) with working Assign to Seat/Unassign.
 
-Camera/USB/Bluetooth entries from `GeneralDeviceEnumerator` are informational only — `SeatManager.AssignDeviceToSeatAsync` only accepts `Keyboard`/`Mouse`, and there's no Core model concept of a seat "owning" a camera or a USB hub. The Devices page checks a row's class before offering the assign dialog, so an admin can't force-pick a nonsensical type for one of these.
+Camera/USB/Bluetooth entries from `GeneralDeviceEnumerator` are now assignable too, as **ownership records** — `Seat.OtherDeviceIds` plus `SeatManager.AssignOtherDeviceToSeatAsync`/`UnassignOtherDeviceFromSeatAsync` (a separate pair from the Keyboard/Mouse-only `AssignDeviceToSeatAsync`, since these device classes don't fit `InputDeviceType`). The Devices page checks a row's class and routes "Assign to Seat…" to the matching dialog (`AssignDeviceToSeatWindow` for Keyboard/Mouse, `AssignOtherDeviceToSeatWindow` for Camera/Image/USB/Bluetooth) rather than letting an admin force-pick a nonsensical type. This gets the same exclusivity guarantee as every other assignment (`_otherDeviceToSeatMap`, rebuilt from persisted `OtherDeviceIds` the same way `_deviceToSeatMap`/`_displayToSeatMap` are), but — stated plainly in the dialog's own text — no routing/isolation effect: there's no InputIsolation-equivalent subsystem for arbitrary peripherals, so assigning a camera here is bookkeeping, not enforcement.
+
+A new **System** page (top-level nav) lists every device/display/audio endpoint across *all* seats in one grid — the shared cross-seat pool view `SeatDetailsWindow` doesn't provide, since that one is per-seat. See [Workplaces Tab](control-panel/workplaces-tab.md) for how it maps to ASTER's own System-area concept.
+
+Credential-based process launching is real and verified: `ISessionManager.LaunchProcessWithCredentialsAsync` wraps `CreateProcessWithLogonW` (the mechanism behind Explorer's "Run as different user"), reachable via a "Test Launch (Notepad)…" button on the User Account dialog. Verified against the real API — correct credentials launch and return a PID, a deliberately wrong password returns the exact expected Win32 error 1326. It is **not** wired to automatic seat start, and does **not** create a hardware-isolated session bound to a seat's own monitor/keyboard/mouse — see [User Account for Workstation](control-panel/user-account-for-workstation.md) for the full scope statement.
 
 | Page | Real backend exists? | GUI wired to it? |
 |---|---|---|
@@ -22,8 +26,11 @@ Camera/USB/Bluetooth entries from `GeneralDeviceEnumerator` are informational on
 | Audio | ✅ `OpenMultiSeat.Audio` | ✅ Yes |
 | Assign CPU Cores | ✅ `OpenMultiSeat.Core.CpuAffinityProvider` | ✅ Yes |
 | Devices → Seat assignment (keyboard/mouse) | ✅ `SeatManager.AssignDeviceToSeatAsync` | ✅ Yes — "Assign to Seat…"/"Unassign" on the Devices page |
+| Devices → Seat assignment (camera/USB/Bluetooth, ownership record only) | ✅ `SeatManager.AssignOtherDeviceToSeatAsync` | ✅ Yes — "Assign to Seat…"/"Unassign" on the Devices page |
 | Displays → Seat assignment | ✅ `SeatManager.AssignDisplayToSeatAsync` | ✅ Yes — "Assign to Seat…"/"Unassign" on the Displays page |
 | Audio → Seat assignment | ✅ `AudioManager.AssignAudioDeviceToSeatAsync` (pre-existing, was already correct) | ✅ Yes — "Assign to Seat…"/"Unassign" on the Audio page |
+| Shared cross-seat System pool view | ✅ reuses existing managers | ✅ Yes — new **System** page |
+| Credential-based process launch | ✅ `SessionManager.LaunchProcessWithCredentialsAsync` (`CreateProcessWithLogonW`), verified | ✅ Yes — "Test Launch…" on the User Account dialog; not wired to automatic seat start |
 | Input Isolation | ✅ `OpenMultiSeat.InputIsolation` | ❌ Stub only |
 
 Fixed alongside device assignment: `SeatManager`'s in-memory "already assigned elsewhere" guard (`_deviceToSeatMap`) was never rebuilt from persisted seat data — only populated by assignment calls made within the same `SeatManager` instance's own lifetime. Since the GUI constructs a fresh `SeatManager` per page load, this silently defeated the exclusivity check entirely; a device could be assigned to two seats at once with no error. `GetAllSeatsAsync` now rebuilds the map from each seat's `KeyboardIds`/`MouseIds` on every load. The same class of map (`_displayToSeatMap`) was added correctly from the start when display assignment was built. Both covered by `tests/OpenMultiSeat.Tests/SeatManagerTests.cs`. `OpenMultiSeat.Audio`'s `AudioManager` did **not** have this bug — its duplicate-assignment guard is reloaded from persistence on every call, not just within one instance's lifetime, so it needed no equivalent fix.
@@ -46,6 +53,9 @@ The original Devices/Seats/Displays/Audio screenshots (`images/screenshots/devic
 - `src/OpenMultiSeat.GUI/Pages/DisplaysPage.xaml(.cs)` — ✅ real
 - `src/OpenMultiSeat.GUI/Pages/AudioPage.xaml(.cs)` — ✅ real
 - `src/OpenMultiSeat.GUI/Windows/AssignCpuCoresWindow.xaml(.cs)` — ✅ real
+- `src/OpenMultiSeat.GUI/Pages/SystemPage.xaml(.cs)` — ✅ real, shared cross-seat pool view
+- `src/OpenMultiSeat.GUI/Windows/AssignOtherDeviceToSeatWindow.xaml(.cs)` — ✅ real, camera/USB/Bluetooth ownership-record assignment
+- `src/OpenMultiSeat.Sessions/SessionManager.cs` (`LaunchProcessWithCredentialsAsync`) — ✅ real, verified via `CreateProcessWithLogonW`
 - `src/OpenMultiSeat.GUI/Pages/InputPage.xaml(.cs)`
 
 ### What the remaining page needs to become real (see the matching [control-panel](control-panel/README.md) page for the ASTER-equivalent UX it should aim for)

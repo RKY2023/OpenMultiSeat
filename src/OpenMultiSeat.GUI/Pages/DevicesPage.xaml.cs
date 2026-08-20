@@ -45,11 +45,11 @@ public partial class DevicesPage : Page
         _seats = await _seatManager.GetAllSeatsAsync();
 
         // ISeatManager has no "which seat owns this device" query — assignment truth lives on
-        // each Seat's KeyboardIds/MouseIds lists, so build the reverse lookup here.
+        // each Seat's KeyboardIds/MouseIds/OtherDeviceIds lists, so build the reverse lookup here.
         var assignedTo = new Dictionary<string, string>();
         foreach (var seat in _seats)
         {
-            foreach (var deviceId in seat.KeyboardIds.Concat(seat.MouseIds))
+            foreach (var deviceId in seat.KeyboardIds.Concat(seat.MouseIds).Concat(seat.OtherDeviceIds))
                 assignedTo[deviceId] = seat.Name;
         }
 
@@ -87,27 +87,19 @@ public partial class DevicesPage : Page
             return;
         }
 
-        if (row.DeviceType != null && GeneralDeviceEnumerator.GeneralDeviceClasses.Contains(row.DeviceType))
-        {
-            MessageBox.Show(
-                $"\"{row.ProductName}\" is a {row.DeviceType} device — only keyboards and mice can be " +
-                "assigned to a seat today. This entry is shown for visibility only.",
-                "Devices", MessageBoxButton.OK, MessageBoxImage.Information);
-            return;
-        }
-
         if (_seats.Count == 0)
         {
             MessageBox.Show("No seats exist yet. Create one on the Seats page first.", "Devices", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
 
-        var window = new AssignDeviceToSeatWindow(_seatManager, row.Device, _seats)
-        {
-            Owner = Window.GetWindow(this)
-        };
+        var isGeneralDevice = row.DeviceType != null && GeneralDeviceEnumerator.GeneralDeviceClasses.Contains(row.DeviceType);
 
-        if (window.ShowDialog() == true)
+        bool? result = isGeneralDevice
+            ? new AssignOtherDeviceToSeatWindow(_seatManager, row.Device, _seats) { Owner = Window.GetWindow(this) }.ShowDialog()
+            : new AssignDeviceToSeatWindow(_seatManager, row.Device, _seats) { Owner = Window.GetWindow(this) }.ShowDialog();
+
+        if (result == true)
         {
             await LoadFromRegistryAsync();
         }
@@ -127,7 +119,12 @@ public partial class DevicesPage : Page
             return;
         }
 
-        await _seatManager.UnassignDeviceFromSeatAsync(row.Device.StableId);
+        var isGeneralDevice = row.DeviceType != null && GeneralDeviceEnumerator.GeneralDeviceClasses.Contains(row.DeviceType);
+        if (isGeneralDevice)
+            await _seatManager.UnassignOtherDeviceFromSeatAsync(row.Device.StableId);
+        else
+            await _seatManager.UnassignDeviceFromSeatAsync(row.Device.StableId);
+
         await LoadFromRegistryAsync();
     }
 

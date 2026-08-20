@@ -124,6 +124,46 @@ public class SeatManagerTests
         await manager.AssignDisplayToSeatAsync("seat-b", "display-1");
     }
 
+    [TestMethod]
+    public async Task AssignOtherDeviceToSeatAsync_DeviceAlreadyAssignedOnDisk_FreshManagerInstanceStillRejectsReassignment()
+    {
+        // Same regression as device/display assignment, for _otherDeviceToSeatMap (cameras/USB/
+        // Bluetooth devices from GeneralDeviceEnumerator).
+        var seatPersistence = new FakeSeatPersistence();
+        var devicePersistence = new FakeDevicePersistence();
+
+        await seatPersistence.SaveSeatAsync(new Seat { Id = "seat-a", Name = "Seat A", OtherDeviceIds = ["camera-1"] });
+        await seatPersistence.SaveSeatAsync(new Seat { Id = "seat-b", Name = "Seat B" });
+        await devicePersistence.SaveDeviceAsync(new DeviceRecord { StableId = "camera-1", HardwareId = "hw-cam-1", DeviceType = "Camera" });
+
+        var manager = new SeatManager(NullLogger<SeatManager>.Instance, seatPersistence, devicePersistence);
+        await manager.GetAllSeatsAsync();
+
+        await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+            () => manager.AssignOtherDeviceToSeatAsync("seat-b", "camera-1"));
+    }
+
+    [TestMethod]
+    public async Task UnassignOtherDeviceFromSeatAsync_RemovesFromOtherDeviceIds()
+    {
+        var seatPersistence = new FakeSeatPersistence();
+        var devicePersistence = new FakeDevicePersistence();
+
+        await seatPersistence.SaveSeatAsync(new Seat { Id = "seat-a", Name = "Seat A", OtherDeviceIds = ["camera-1"] });
+        await devicePersistence.SaveDeviceAsync(new DeviceRecord { StableId = "camera-1", HardwareId = "hw-cam-1", DeviceType = "Camera" });
+
+        var manager = new SeatManager(NullLogger<SeatManager>.Instance, seatPersistence, devicePersistence);
+        await manager.GetAllSeatsAsync();
+
+        await manager.UnassignOtherDeviceFromSeatAsync("camera-1");
+
+        var seat = await manager.GetSeatAsync("seat-a");
+        Assert.IsFalse(seat!.OtherDeviceIds.Contains("camera-1"));
+
+        await seatPersistence.SaveSeatAsync(new Seat { Id = "seat-b", Name = "Seat B" });
+        await manager.AssignOtherDeviceToSeatAsync("seat-b", "camera-1");
+    }
+
     private sealed class FakeSeatPersistence : ISeatPersistence
     {
         private readonly Dictionary<string, Seat> _seats = [];

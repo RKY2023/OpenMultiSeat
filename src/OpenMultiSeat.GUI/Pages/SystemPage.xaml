@@ -1,0 +1,34 @@
+<Page x:Class="OpenMultiSeat.GUI.Pages.SystemPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="System">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="System" FontSize="20" FontWeight="Bold" Margin="0,0,0,10"/>
+        <TextBlock Grid.Row="1" FontSize="12" Foreground="#666666" TextWrapping="Wrap" Margin="0,0,0,10"
+                   Text="Every device, display, and audio endpoint across every seat in one place -- closer to ASTER's shared System pool than the per-page (Devices/Displays/Audio) or per-seat (Seats then Configure) views. Assign/unassign here use the same underlying calls as those pages."/>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,15">
+            <Button Content="Refresh" Click="OnRefresh" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,0,10,0"/>
+            <Button Content="Assign Selected To..." Click="OnAssignSelected" Background="#2D6CDF" Foreground="White" Padding="12,8" Margin="0,0,10,0"/>
+            <Button Content="Unassign Selected" Click="OnUnassignSelected" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,0,10,0"/>
+            <TextBlock x:Name="StatusText" VerticalAlignment="Center" Foreground="#666666" FontSize="12"/>
+        </StackPanel>
+
+        <DataGrid Grid.Row="3" x:Name="SystemGrid" AutoGenerateColumns="False" IsReadOnly="True"
+                  SelectionMode="Single" Background="White" BorderBrush="#CCCCCC">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Kind" Binding="{Binding Kind}" Width="90"/>
+                <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="260"/>
+                <DataGridTextColumn Header="Detail" Binding="{Binding Detail}" Width="150"/>
+                <DataGridTextColumn Header="Assigned To" Binding="{Binding AssignedSeatDisplay}" Width="150"/>
+            </DataGrid.Columns>
+        </DataGrid>
+    </Grid>
+</Page>

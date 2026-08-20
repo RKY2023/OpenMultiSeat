@@ -27,6 +27,12 @@ public partial class MainWindow : Window
         StatusText.Text = "Seats - Multi-seat configuration and management";
     }
 
+    private void OnNavigateSystem(object sender, RoutedEventArgs e)
+    {
+        ContentFrame.Navigate(new Pages.SystemPage());
+        StatusText.Text = "System - Every device, display, and audio endpoint across all seats";
+    }
+
     private void OnNavigateDisplays(object sender, RoutedEventArgs e)
     {
         ContentFrame.Navigate(new Pages.DisplaysPage());
