@@ -23,6 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="../src/OpenMultiSeat.Core/OpenMultiSeat.Core.csproj" />
     <ProjectReference Include="../src/OpenMultiSeat.Sessions/OpenMultiSeat.Sessions.csproj" />
   </ItemGroup>
 

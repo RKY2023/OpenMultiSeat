@@ -46,7 +46,7 @@ Each page states **what ASTER's equivalent does**, then **OpenMultiSeat's status
 | ["Applications and Folders" Window](applications-and-folders.md) | Applications and Folders | 📋 Planned |
 | [Confirming Starting of Workplaces Window](confirming-starting-of-workplaces.md) | Confirming Starting of Workplaces | 📋 Planned |
 | ["Experimental Settings" Window](experimental-settings.md) | Experimental Settings | 📋 Planned |
-| ["Assign CPU Cores" Window](assign-cpu-cores.md) | Assign CPU Cores | 📋 Planned |
+| ["Assign CPU Cores" Window](assign-cpu-cores.md) | Assign CPU Cores | ✅ Implemented |
 | ["Set Log Verbosity" Window](log-verbosity.md) | Set Log Verbosity | 📋 Planned |
 | ["Reset Settings" Action](reset-settings.md) | Reset Settings | 📋 Planned |
 | ["Check Configuration" Action](check-configuration.md) | Check Configuration | 📋 Planned |
@@ -61,7 +61,7 @@ Each page states **what ASTER's equivalent does**, then **OpenMultiSeat's status
 
 ## Status summary
 
-- **3 pages fully implemented** (Main Window, General Settings tab, About tab)
+- **4 pages fully implemented** (Main Window, General Settings tab, About tab, Assign CPU Cores)
 - **6 pages are stubs** — real backend exists, GUI isn't wired yet (all fall under the Seats/Displays/Input Isolation configuration story — see [Known Issues](../known-issues.md))
-- **10 pages are planned**, no implementation yet
+- **9 pages are planned**, no implementation yet
 - **9 pages don't apply today** — 7 pure licensing/activation pages plus Proxy Server Setup and Support Request, which currently have no OpenMultiSeat need but could become planned items later (see [`../user-manual/licensing-model.md`](../user-manual/licensing-model.md))

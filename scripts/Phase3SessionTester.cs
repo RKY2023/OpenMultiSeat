@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using OpenMultiSeat.Core;
 using OpenMultiSeat.Sessions;
 
 var services = new ServiceCollection();
@@ -11,6 +12,7 @@ services.AddLogging(builder =>
         .SetMinimumLevel(LogLevel.Information));
 
 services.AddSingleton<ISessionEnumerator, SessionEnumerator>();
+services.AddSingleton<ICpuAffinityProvider, CpuAffinityProvider>();
 services.AddSingleton<ISessionManager, SessionManager>();
 
 var provider = services.BuildServiceProvider();
