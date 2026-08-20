@@ -12,15 +12,17 @@ namespace OpenMultiSeat.GUI.Pages;
 
 /// <summary>
 /// Reads and writes the real device registry directly through IDevicePersistence /
-/// IHidDeviceEnumerator, and now also seat assignment via ISeatManager — the same direct-
-/// persistence pattern used by SeatsPage/AssignCpuCoresWindow, since no GUI page has IPC wiring
-/// to the Service today. Previously this page's buttons only popped a MessageBox and
-/// DevicesGrid.ItemsSource was never set, despite the XAML looking fully built out.
+/// IHidDeviceEnumerator / IGeneralDeviceEnumerator, and now also seat assignment via
+/// ISeatManager — the same direct-persistence pattern used by SeatsPage/AssignCpuCoresWindow,
+/// since no GUI page has IPC wiring to the Service today. Previously this page's buttons only
+/// popped a MessageBox and DevicesGrid.ItemsSource was never set, despite the XAML looking fully
+/// built out.
 /// </summary>
 public partial class DevicesPage : Page
 {
     private readonly IDevicePersistence _persistence;
     private readonly IHidDeviceEnumerator _enumerator;
+    private readonly IGeneralDeviceEnumerator _generalEnumerator;
     private readonly ISeatManager _seatManager;
     private IReadOnlyList<Seat> _seats = [];
 
@@ -30,6 +32,7 @@ public partial class DevicesPage : Page
 
         _persistence = new DevicePersistence(GuiLoggerFactory.Instance.CreateLogger<DevicePersistence>());
         _enumerator = new HidDeviceEnumerator(GuiLoggerFactory.Instance.CreateLogger<HidDeviceEnumerator>(), _persistence);
+        _generalEnumerator = new GeneralDeviceEnumerator(GuiLoggerFactory.Instance.CreateLogger<GeneralDeviceEnumerator>(), _persistence);
         var seatPersistence = new SeatPersistence(GuiLoggerFactory.Instance.CreateLogger<SeatPersistence>());
         _seatManager = new SeatManager(GuiLoggerFactory.Instance.CreateLogger<SeatManager>(), seatPersistence, _persistence);
 
@@ -62,10 +65,12 @@ public partial class DevicesPage : Page
     private async void OnScanDevices(object sender, RoutedEventArgs e)
     {
         StatusText.Text = "Scanning...";
-        var found = await _enumerator.EnumerateAllDevicesAsync();
+        var hidDevices = await _enumerator.EnumerateAllDevicesAsync();
+        var generalDevices = await _generalEnumerator.EnumerateGeneralDevicesAsync();
         await LoadFromRegistryAsync();
         MessageBox.Show(
-            $"Scan complete: {found.Count} keyboard/mouse input device(s) detected via Windows Raw Input.",
+            $"Scan complete: {hidDevices.Count} keyboard/mouse input device(s) via Windows Raw Input, " +
+            $"{generalDevices.Count} other device(s) (camera/USB/Bluetooth) via WMI.",
             "Devices", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
@@ -79,6 +84,15 @@ public partial class DevicesPage : Page
         if (DevicesGrid.SelectedItem is not DeviceRow row)
         {
             MessageBox.Show("Select a device to assign first.", "Devices", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        if (row.DeviceType != null && GeneralDeviceEnumerator.GeneralDeviceClasses.Contains(row.DeviceType))
+        {
+            MessageBox.Show(
+                $"\"{row.ProductName}\" is a {row.DeviceType} device — only keyboards and mice can be " +
+                "assigned to a seat today. This entry is shown for visibility only.",
+                "Devices", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
 
@@ -161,6 +175,7 @@ public partial class DevicesPage : Page
     {
         public DeviceRecord Device { get; } = device;
         public string? ProductName => Device.ProductName;
+        public string? DeviceType => Device.DeviceType;
         public string? HardwareId => Device.HardwareId;
         public string? VendorId => Device.VendorId;
         public string? ProductId => Device.ProductId;
