@@ -33,6 +33,7 @@ flowchart TD
     P5[["P5: Input Isolation<br/>(InputIsolationService)"]]
     P6[["P6: Session Launch<br/>(SessionManager)"]]
     P7[["P7: IPC Gateway<br/>(Named Pipe Server)"]]
+    P8[["P8: CPU Affinity Assignment<br/>(CpuAffinityManager)"]]
 
     DS1[("D1: Device Records store<br/>(DevicePersistence)")]
     DS2[("D2: Seat Configuration store<br/>(SeatConfiguration)")]
@@ -57,4 +58,10 @@ flowchart TD
     WTS -->|session state| P6
     P6 -->|session events| DS3
     P1 -->|device add/remove events| DS3
+
+    User -->|CPU-core assignment| P7
+    P7 -->|forwarded request| P8
+    P8 -->|read/write per-seat core mask| DS2
+    P8 -->|SetProcessAffinityMask| WTS
+    P8 -->|assignment confirmed| P7
 ```

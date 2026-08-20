@@ -30,6 +30,7 @@ Each page states **what ASTER's equivalent does**, then **OpenMultiSeat's status
 | ["Create Master License" Window](create-master-license.md) | Create Master License window | ➖ N/A |
 | [Request for Automatic Activation](request-for-automatic-activation.md) | Auto-activation request | ➖ N/A |
 | ["License Expire Time" Notification Window](license-expire-time-notification.md) | License expiry notice | ➖ N/A |
+| ["Cleanup License" Action](cleanup-license.md) | Cleanup License | ➖ N/A |
 
 ## Seat / Device / Display / Input Configuration
 
@@ -45,6 +46,10 @@ Each page states **what ASTER's equivalent does**, then **OpenMultiSeat's status
 | ["Applications and Folders" Window](applications-and-folders.md) | Applications and Folders | 📋 Planned |
 | [Confirming Starting of Workplaces Window](confirming-starting-of-workplaces.md) | Confirming Starting of Workplaces | 📋 Planned |
 | ["Experimental Settings" Window](experimental-settings.md) | Experimental Settings | 📋 Planned |
+| ["Assign CPU Cores" Window](assign-cpu-cores.md) | Assign CPU Cores | 📋 Planned |
+| ["Set Log Verbosity" Window](log-verbosity.md) | Set Log Verbosity | 📋 Planned |
+| ["Reset Settings" Action](reset-settings.md) | Reset Settings | 📋 Planned |
+| ["Check Configuration" Action](check-configuration.md) | Check Configuration | 📋 Planned |
 
 ## Network & Support
 
@@ -58,5 +63,5 @@ Each page states **what ASTER's equivalent does**, then **OpenMultiSeat's status
 
 - **3 pages fully implemented** (Main Window, General Settings tab, About tab)
 - **6 pages are stubs** — real backend exists, GUI isn't wired yet (all fall under the Seats/Displays/Input Isolation configuration story — see [Known Issues](../known-issues.md))
-- **7 pages are planned**, no implementation yet
-- **7 pages don't apply** — all licensing/activation, since OpenMultiSeat has no license system of any kind (see [`../user-manual/licensing-model.md`](../user-manual/licensing-model.md))
+- **10 pages are planned**, no implementation yet
+- **9 pages don't apply today** — 7 pure licensing/activation pages plus Proxy Server Setup and Support Request, which currently have no OpenMultiSeat need but could become planned items later (see [`../user-manual/licensing-model.md`](../user-manual/licensing-model.md))

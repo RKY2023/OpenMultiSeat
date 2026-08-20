@@ -33,6 +33,7 @@ flowchart TD
         G3 --> G4[🚧 Seats page: assign devices to seats]
         G4 --> G5[🚧 Displays page: assign monitors to seats]
         G5 --> G6[🚧 Audio page: assign audio devices to seats]
+        G4 -.->|optional| G7[📋 Assign CPU cores per seat]
     end
 
     U2 --> I1

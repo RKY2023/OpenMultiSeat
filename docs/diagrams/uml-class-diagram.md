@@ -46,6 +46,10 @@ classDiagram
             <<interface>>
             +EnumerateDisplays() List~Display~
         }
+        class ICpuAffinityProvider {
+            <<interface>>
+            +ApplyAffinity(Seat, IntPtr processHandle)
+        }
         class SeatManager {
             +AssignDevice(Seat, DeviceRecord)
             +AssignDisplay(Seat, Display)
@@ -81,6 +85,9 @@ classDiagram
         }
         class ProcessLauncher {
             +Launch(Seat, string path)
+        }
+        class CpuAffinityManager {
+            +ApplyAffinity(Seat, IntPtr processHandle)
         }
     }
 
@@ -118,8 +125,10 @@ classDiagram
 
     DevicePersistence ..|> IDevicePersistence
     DisplayEnumerator ..|> IDisplayEnumerator
+    CpuAffinityManager ..|> ICpuAffinityProvider
     DisplayManager --> IDisplayEnumerator : depends on
     SeatManager --> IDevicePersistence : depends on
+    ProcessLauncher --> ICpuAffinityProvider : depends on
     SeatManager --> Seat
     Seat --> DeviceRecord
     Seat --> Display
@@ -139,4 +148,4 @@ classDiagram
     AudioPage --> MainWindow
 ```
 
-**Status note:** `SeatsPage`, `DisplaysPage`, `InputPage`, and `AudioPage` are shown here as they *should* be wired (bound to their respective managers over IPC) — today they are stub views with no such binding. See [Known Issues](../known-issues.md).
+**Status note:** `SeatsPage`, `DisplaysPage`, `InputPage`, and `AudioPage` are shown here as they *should* be wired (bound to their respective managers over IPC) — today they are stub views with no such binding. See [Known Issues](../known-issues.md). `ICpuAffinityProvider`/`CpuAffinityManager` represent a fifth, currently entirely unbuilt isolation axis (CPU scheduling, alongside device/display/audio/input) — see [Assign CPU Cores](../control-panel/assign-cpu-cores.md).

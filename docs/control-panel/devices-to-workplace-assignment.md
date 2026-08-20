@@ -4,7 +4,7 @@
 
 ## What ASTER does
 
-The "Devices to Workplace(s) Assignment" window, opened via "Assign to a workplace" on a device's context menu, lets an administrator choose which workplace(s) may use a given device. It offers per-workplace checkboxes plus two convenience modes: "To All" for devices meant to be shared by every workplace simultaneously (e.g., speakers), and "To None" for devices that must be exclusive to a single workplace (e.g., monitors).
+The "Devices to Workplace(s) Assignment" window, opened via "Workplace appointment…" on a device's context menu, lets an administrator choose which workplace(s) may use a given device. It offers per-workplace checkboxes plus two convenience modes: "To All" for devices meant to be shared by every workplace simultaneously (e.g., speakers), and "To None" for devices that must be exclusive to a single workplace (e.g., monitors). The same context menu carries a few smaller related actions on each device slot: **Indicate device** (flashes/highlights the physical device so an administrator can confirm which one it is), **Info**, and **Set custom icon**.
 
 ## OpenMultiSeat status
 
