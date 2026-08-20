@@ -17,7 +17,7 @@ Camera/USB/Bluetooth devices (from `GeneralDeviceEnumerator`) are assignable too
 What's different from ASTER's version of this window:
 
 - **Exclusive-only, no "To All" shared mode.** `SeatManager`'s assignment model is exclusive by design — a device already assigned to one seat is rejected if you try to assign it to another, with no equivalent of ASTER's "To All" (share this device across every workplace simultaneously). Building that would mean changing the underlying `Seat.KeyboardIds`/`MouseIds` model, not just the GUI.
-- **No reassignment flow.** Moving a device from Seat A to Seat B currently means unassigning it first, then assigning it again — there's no drag-and-drop or single-step "move" action (that's really what ASTER's separate [Confirm Device Destination](confirm-device-destination.md) window covers).
+- **Reassignment now confirms and moves in one action** — picking a different seat for an already-assigned device shows a before/after confirm (current seat → new seat) via `ConfirmDeviceDestinationWindow`, then unassigns and reassigns on confirmation, matching ASTER's separate [Confirm Device Destination](confirm-device-destination.md) window conceptually. Still no drag-and-drop (it's the existing "Assign to Seat…" dropdown flow) and still two `ISeatManager` calls under the hood, not one atomic move.
 - **No "Indicate device" / "Set custom icon" / per-device "Info".** Only the assignment action itself is built.
 - Still direct-persistence, not IPC (see [Known Issues](../known-issues.md)) — same caveat as every other real page today.
 

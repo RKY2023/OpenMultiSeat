@@ -136,8 +136,39 @@ public partial class SystemPage : Page
         if (picker.ShowDialog() != true || picker.SelectedSeat == null)
             return;
 
+        // Reassigning to a different seat than the one that currently owns this resource —
+        // confirm before moving it, matching ASTER's "Confirm Device Destination" step (see
+        // docs/control-panel/confirm-device-destination.md). Same rule the dedicated Assign*
+        // windows apply, reproduced inline here since this page calls the managers directly.
+        var isMove = row.AssignedSeatName != null && !string.Equals(row.AssignedSeatName, picker.SelectedSeat.Name, StringComparison.Ordinal);
+        if (isMove)
+        {
+            var confirm = new ConfirmDeviceDestinationWindow(row.Name, row.AssignedSeatName!, picker.SelectedSeat.Name) { Owner = Window.GetWindow(this) };
+            if (confirm.ShowDialog() != true)
+                return;
+        }
+
         try
         {
+            if (isMove)
+            {
+                switch (row.Kind)
+                {
+                    case SystemRowKind.Device:
+                        if (row.Detail != null && GeneralDeviceEnumerator.GeneralDeviceClasses.Contains(row.Detail))
+                            await _seatManager.UnassignOtherDeviceFromSeatAsync(row.ResourceId);
+                        else
+                            await _seatManager.UnassignDeviceFromSeatAsync(row.ResourceId);
+                        break;
+                    case SystemRowKind.Display:
+                        await _seatManager.UnassignDisplayFromSeatAsync(row.ResourceId);
+                        break;
+                    case SystemRowKind.Audio:
+                        await _audioManager.UnassignAudioDeviceFromSeatAsync(row.ResourceId);
+                        break;
+                }
+            }
+
             switch (row.Kind)
             {
                 case SystemRowKind.Device:

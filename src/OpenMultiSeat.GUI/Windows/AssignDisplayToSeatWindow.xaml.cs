@@ -8,12 +8,16 @@ public partial class AssignDisplayToSeatWindow : Window
 {
     private readonly ISeatManager _seatManager;
     private readonly Display _display;
+    private readonly string? _currentSeatName;
 
-    public AssignDisplayToSeatWindow(ISeatManager seatManager, Display display, IReadOnlyList<Seat> seats)
+    /// <param name="currentSeatName">The seat this display is already assigned to, if any — see
+    /// AssignDeviceToSeatWindow's matching parameter for the confirm-before-move behavior.</param>
+    public AssignDisplayToSeatWindow(ISeatManager seatManager, Display display, IReadOnlyList<Seat> seats, string? currentSeatName = null)
     {
         InitializeComponent();
         _seatManager = seatManager;
         _display = display;
+        _currentSeatName = currentSeatName;
 
         TitleText.Text = $"Assign \"{display.DeviceName}\" to a seat";
         SeatComboBox.ItemsSource = seats;
@@ -27,6 +31,15 @@ public partial class AssignDisplayToSeatWindow : Window
         {
             ShowError("Select a seat.");
             return;
+        }
+
+        if (_currentSeatName != null && !string.Equals(_currentSeatName, seat.Name, StringComparison.Ordinal))
+        {
+            var confirm = new ConfirmDeviceDestinationWindow(_display.DeviceName, _currentSeatName, seat.Name) { Owner = this };
+            if (confirm.ShowDialog() != true)
+                return;
+
+            await _seatManager.UnassignDisplayFromSeatAsync(_display.DisplayId);
         }
 
         try

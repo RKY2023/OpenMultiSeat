@@ -96,8 +96,8 @@ public partial class DevicesPage : Page
         var isGeneralDevice = row.DeviceType != null && GeneralDeviceEnumerator.GeneralDeviceClasses.Contains(row.DeviceType);
 
         bool? result = isGeneralDevice
-            ? new AssignOtherDeviceToSeatWindow(_seatManager, row.Device, _seats) { Owner = Window.GetWindow(this) }.ShowDialog()
-            : new AssignDeviceToSeatWindow(_seatManager, row.Device, _seats) { Owner = Window.GetWindow(this) }.ShowDialog();
+            ? new AssignOtherDeviceToSeatWindow(_seatManager, row.Device, _seats, row.AssignedSeatName) { Owner = Window.GetWindow(this) }.ShowDialog()
+            : new AssignDeviceToSeatWindow(_seatManager, row.Device, _seats, row.AssignedSeatName) { Owner = Window.GetWindow(this) }.ShowDialog();
 
         if (result == true)
         {

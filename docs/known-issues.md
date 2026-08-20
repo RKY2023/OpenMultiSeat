@@ -20,6 +20,8 @@ Making At System Startup actually work (it runs as `SYSTEM`) required switching 
 
 **Input Isolation is now wired too** — the page lists every registered keyboard/mouse, shows which seat (if any) each is bound to via `IInputIsolationService`, and offers real Enable/Disable Isolation, Bind to Seat…, Unbind, and Validate Configuration actions (the last surfacing `ValidateIsolationConfigAsync`'s real checks: a binding pointing at a deleted seat, a device bound twice, a seat with no keyboard/mouse). See [Input Devices Switch](control-panel/input-devices-switch.md) for what's still missing relative to ASTER's own hotkey-rebind UI specifically, and for a pre-existing architecture note this wiring surfaced: `SeatManager.AssignDeviceToSeatAsync` (Devices page) and `InputIsolationService.BindDeviceToSeatAsync` (this page) are two **independent** stores that can disagree about which seat a keyboard/mouse belongs to — not resolved here, since unifying them is a separate, bigger decision than getting the page off its stub.
 
+**Reassignment now has a real confirm step, closing most of the "Confirm Device Destination" gap.** Every "Assign to Seat…" flow (Devices, Displays, Audio, System page) detects when the picked resource is already assigned to a *different* seat and shows a new `ConfirmDeviceDestinationWindow` (resource name, current seat, new seat, Move/Cancel) before actually moving it — only on confirmation does the GUI call `UnassignXFromSeatAsync` then `AssignXToSeatAsync`. Assigning an unassigned resource, or "reassigning" to the seat it's already on, skips the prompt (nothing to confirm). See [Confirm Device Destination](control-panel/confirm-device-destination.md) for what ASTER's own drag-and-drop/batched-table version still has that this doesn't.
+
 | Page | Real backend exists? | GUI wired to it? |
 |---|---|---|
 | Devices | ✅ `OpenMultiSeat.Devices` | ✅ Yes |
@@ -62,10 +64,11 @@ The original Devices/Seats/Displays/Audio/Input-Isolation screenshots (`images/s
 - `src/OpenMultiSeat.GUI/Program.cs`, `App.xaml.cs` (`--start-seats`) — ✅ real, headless entry point the Scheduled Tasks invoke
 - `src/OpenMultiSeat.GUI/Pages/SettingsPage.xaml(.cs)` — ✅ real, Workplace Start Mode dropdown + "Start Workplaces Now"
 - `src/OpenMultiSeat.GUI/Pages/InputPage.xaml(.cs)` — ✅ real, bind/unbind + isolation toggle + validate, via `InputIsolationService`
+- `src/OpenMultiSeat.GUI/Windows/ConfirmDeviceDestinationWindow.xaml(.cs)` — ✅ real, before/after move confirm, used by all four Assign* windows and SystemPage
 
 ### What's still not real (see the matching [control-panel](control-panel/README.md) page for the ASTER-equivalent UX each should aim for)
 
 - **Input Isolation's hotkey-rebind UI specifically** — ASTER's window is a single "press a key combination" capture field for switching a device's active seat at runtime; `InputIsolationService` has no hotkey concept, so binding here is a persistent config change, not a live switch. See [Input Devices Switch](control-panel/input-devices-switch.md).
 - **Workplace Tab Settings** — still a `MessageBox` stub; see [Workplace Tab Settings](control-panel/workplace-tab-settings.md).
-- **Reassignment ("move" a device/display/audio endpoint between seats)** — today, moving an already-assigned resource to a different seat means unassigning it first, then assigning it again; there's no single-step move or the before/after confirmation table ASTER's [Confirm Device Destination](control-panel/confirm-device-destination.md) window provides.
+- **Confirm Device Destination's drag-and-drop and batched multi-device table** — the move confirm itself is real now (see above), but it's still a dropdown-driven, one-resource-at-a-time flow, not drag-and-drop with a per-row-checkbox table. See [Confirm Device Destination](control-panel/confirm-device-destination.md).
 - **Unifying the two "which seat owns this keyboard/mouse" stores** — `SeatManager.AssignDeviceToSeatAsync` (`Seat.KeyboardIds`/`MouseIds`) and `InputIsolationService.BindDeviceToSeatAsync` (`input-bindings.json`) are independent and can disagree; see the Input Isolation section above.

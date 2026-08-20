@@ -15,12 +15,18 @@ public partial class AssignDeviceToSeatWindow : Window
 {
     private readonly ISeatManager _seatManager;
     private readonly DeviceRecord _device;
+    private readonly string? _currentSeatName;
 
-    public AssignDeviceToSeatWindow(ISeatManager seatManager, DeviceRecord device, IReadOnlyList<Seat> seats)
+    /// <param name="currentSeatName">The seat this device is already assigned to, if any — pass
+    /// null for a first-time assignment. When set and the admin picks a *different* seat, a
+    /// Confirm Device Destination prompt shows before the device actually moves (see
+    /// ConfirmDeviceDestinationWindow); picking the same seat is a no-op either way.</param>
+    public AssignDeviceToSeatWindow(ISeatManager seatManager, DeviceRecord device, IReadOnlyList<Seat> seats, string? currentSeatName = null)
     {
         InitializeComponent();
         _seatManager = seatManager;
         _device = device;
+        _currentSeatName = currentSeatName;
 
         TitleText.Text = $"Assign \"{device.ProductName}\" to a seat";
         SeatComboBox.ItemsSource = seats;
@@ -39,6 +45,15 @@ public partial class AssignDeviceToSeatWindow : Window
         {
             ShowError("Select a seat.");
             return;
+        }
+
+        if (_currentSeatName != null && !string.Equals(_currentSeatName, seat.Name, StringComparison.Ordinal))
+        {
+            var confirm = new ConfirmDeviceDestinationWindow(_device.ProductName ?? "this device", _currentSeatName, seat.Name) { Owner = this };
+            if (confirm.ShowDialog() != true)
+                return;
+
+            await _seatManager.UnassignDeviceFromSeatAsync(_device.StableId);
         }
 
         var type = MouseRadio.IsChecked == true ? InputDeviceType.Mouse : InputDeviceType.Keyboard;

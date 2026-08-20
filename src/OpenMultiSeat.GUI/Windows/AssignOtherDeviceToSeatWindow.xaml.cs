@@ -11,12 +11,16 @@ public partial class AssignOtherDeviceToSeatWindow : Window
 {
     private readonly ISeatManager _seatManager;
     private readonly DeviceRecord _device;
+    private readonly string? _currentSeatName;
 
-    public AssignOtherDeviceToSeatWindow(ISeatManager seatManager, DeviceRecord device, IReadOnlyList<Seat> seats)
+    /// <param name="currentSeatName">The seat this device is already assigned to, if any — see
+    /// AssignDeviceToSeatWindow's matching parameter for the confirm-before-move behavior.</param>
+    public AssignOtherDeviceToSeatWindow(ISeatManager seatManager, DeviceRecord device, IReadOnlyList<Seat> seats, string? currentSeatName = null)
     {
         InitializeComponent();
         _seatManager = seatManager;
         _device = device;
+        _currentSeatName = currentSeatName;
 
         TitleText.Text = $"Assign \"{device.ProductName}\" ({device.DeviceType}) to a seat";
         SeatComboBox.ItemsSource = seats;
@@ -30,6 +34,15 @@ public partial class AssignOtherDeviceToSeatWindow : Window
         {
             ShowError("Select a seat.");
             return;
+        }
+
+        if (_currentSeatName != null && !string.Equals(_currentSeatName, seat.Name, StringComparison.Ordinal))
+        {
+            var confirm = new ConfirmDeviceDestinationWindow(_device.ProductName ?? "this device", _currentSeatName, seat.Name) { Owner = this };
+            if (confirm.ShowDialog() != true)
+                return;
+
+            await _seatManager.UnassignOtherDeviceFromSeatAsync(_device.StableId);
         }
 
         try

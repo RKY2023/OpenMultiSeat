@@ -87,7 +87,7 @@ public partial class AudioPage : Page
             return;
         }
 
-        var window = new AssignAudioDeviceToSeatWindow(_audioManager, row.Device, _seats)
+        var window = new AssignAudioDeviceToSeatWindow(_audioManager, row.Device, _seats, row.AssignedSeatName)
         {
             Owner = Window.GetWindow(this)
         };

@@ -8,13 +8,12 @@ The "Confirm Device Destination" window appears after an administrator drags and
 
 ## OpenMultiSeat status
 
-📋 **Planned** — no current implementation. See [Known Issues](../known-issues.md) for what the surrounding pages now do.
+🚧 **Partially implemented** — a real single-resource confirm exists; no drag-and-drop or batched multi-device table.
 
-The Devices and Seats pages are both real today, and [Devices to Workplace(s) Assignment](devices-to-workplace-assignment.md) covers the *first* assignment of a device to a seat (a real "Assign to Seat…" action exists on the Devices page). What this specific window covers — *reassigning* an already-assigned device from one seat to another, with a before/after confirmation step — is still missing. Today, moving a device means unassigning it first (a separate action, no confirmation dialog) and assigning it again; there's no drag-and-drop, no single "move" action, and no batched multi-device confirmation table.
+Every "Assign to Seat…" action across Devices, Displays, Audio, and the System page now checks whether the picked resource is already assigned to a *different* seat before actually moving it. If so, a `ConfirmDeviceDestinationWindow` shows the resource name with its current and new seat side by side — Move to proceed, Cancel to abort — and only on confirmation does the GUI unassign from the old seat and assign to the new one. Picking the *same* seat it's already on, or assigning a not-yet-assigned resource, skips the prompt (nothing to compare against, matching ASTER's own trigger condition — the prompt is for genuine reassignment, not first assignment).
 
-A real implementation would need:
+What's still missing relative to ASTER's own window:
 
-- A drag-and-drop or context-menu action on the Devices grid to initiate a device-to-seat move (rather than requiring an explicit unassign step first).
-- A confirmation dialog listing the moved `DeviceRecord` entries with "current seat" and "new seat" columns.
-- Per-row checkboxes so only confirmed devices are actually reassigned.
-- Wiring into `ISeatManager` (already exists: `UnassignDeviceFromSeatAsync` + `AssignDeviceToSeatAsync`, just not called as a single atomic "move" today).
+- **No drag-and-drop.** The move still starts from the existing "Assign to Seat…" button/dialog flow (pick a device, then a seat from a dropdown), not a drag gesture onto a workplace.
+- **One resource at a time, no batched table.** ASTER's dialog handles multiple dragged devices in one table with per-row checkboxes; this confirms a single resource per action, matching how assignment already works everywhere else in this GUI.
+- **Not a single atomic operation.** The move is still `UnassignXFromSeatAsync` followed by `AssignXToSeatAsync` — two `ISeatManager`/`IAudioManager` calls in sequence from the GUI, not one transactional call. A failure between the two (unlikely, but possible) could leave the resource unassigned rather than on either seat.

@@ -84,7 +84,7 @@ public partial class DisplaysPage : Page
             return;
         }
 
-        var window = new AssignDisplayToSeatWindow(_seatManager, row.Display, _seats)
+        var window = new AssignDisplayToSeatWindow(_seatManager, row.Display, _seats, row.AssignedSeatName)
         {
             Owner = Window.GetWindow(this)
         };

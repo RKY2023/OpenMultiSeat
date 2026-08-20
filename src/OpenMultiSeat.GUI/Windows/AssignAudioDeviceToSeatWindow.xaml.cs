@@ -17,12 +17,16 @@ public partial class AssignAudioDeviceToSeatWindow : Window
 {
     private readonly IAudioManager _audioManager;
     private readonly AudioDevice _device;
+    private readonly string? _currentSeatName;
 
-    public AssignAudioDeviceToSeatWindow(IAudioManager audioManager, AudioDevice device, IReadOnlyList<Seat> seats)
+    /// <param name="currentSeatName">The seat this endpoint is already assigned to, if any — see
+    /// AssignDeviceToSeatWindow's matching parameter for the confirm-before-move behavior.</param>
+    public AssignAudioDeviceToSeatWindow(IAudioManager audioManager, AudioDevice device, IReadOnlyList<Seat> seats, string? currentSeatName = null)
     {
         InitializeComponent();
         _audioManager = audioManager;
         _device = device;
+        _currentSeatName = currentSeatName;
 
         TitleText.Text = $"Assign \"{device.FriendlyName}\" ({device.Type}) to a seat";
         SeatComboBox.ItemsSource = seats;
@@ -36,6 +40,15 @@ public partial class AssignAudioDeviceToSeatWindow : Window
         {
             ShowError("Select a seat.");
             return;
+        }
+
+        if (_currentSeatName != null && !string.Equals(_currentSeatName, seat.Name, StringComparison.Ordinal))
+        {
+            var confirm = new ConfirmDeviceDestinationWindow(_device.FriendlyName, _currentSeatName, seat.Name) { Owner = this };
+            if (confirm.ShowDialog() != true)
+                return;
+
+            await _audioManager.UnassignAudioDeviceFromSeatAsync(_device.DeviceId);
         }
 
         var role = _device.Type == AudioDeviceType.Recording ? AudioDeviceRole.Recording : AudioDeviceRole.Playback;
