@@ -1,0 +1,28 @@
+<Window x:Class="OpenMultiSeat.GUI.Windows.AssignDisplayToSeatWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Assign to Seat" Height="230" Width="420"
+    Background="#1E1E1E" WindowStartupLocation="CenterOwner" ResizeMode="NoResize">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock x:Name="TitleText" Grid.Row="0" FontSize="18" FontWeight="Bold" Foreground="White" Margin="0,0,0,15" TextWrapping="Wrap"/>
+
+        <TextBlock Grid.Row="1" Text="Seat" Foreground="#AAAAAA" FontSize="12" Margin="0,0,0,5"/>
+        <ComboBox x:Name="SeatComboBox" Grid.Row="2" DisplayMemberPath="Name" Padding="8" FontSize="14"/>
+
+        <TextBlock x:Name="ErrorText" Grid.Row="3" Foreground="#E06C75" FontSize="12"
+                   TextWrapping="Wrap" VerticalAlignment="Top" Margin="0,8,0,0" Visibility="Collapsed"/>
+
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
+            <Button Content="Assign" Click="OnAssign" Background="#2D6CDF" Foreground="White" Padding="16,8" Margin="0,0,10,0" IsDefault="True"/>
+            <Button Content="Cancel" Click="OnCancel" Background="#3D3D3D" Foreground="White" Padding="16,8" IsCancel="True"/>
+        </StackPanel>
+    </Grid>
+</Window>

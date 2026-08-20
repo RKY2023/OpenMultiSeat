@@ -11,6 +11,8 @@ public interface ISeatManager
     Task DeleteSeatAsync(string seatId);
     Task AssignDeviceToSeatAsync(string seatId, string deviceId, InputDeviceType type);
     Task UnassignDeviceFromSeatAsync(string deviceId);
+    Task AssignDisplayToSeatAsync(string seatId, string displayId);
+    Task UnassignDisplayFromSeatAsync(string displayId);
     Task<IReadOnlyList<ValidationError>> ValidateConfigurationAsync();
     Task<SeatConfiguration> ExportConfigurationAsync();
     Task ImportConfigurationAsync(SeatConfiguration config);
@@ -41,6 +43,7 @@ public class SeatManager : ISeatManager
 
     private Dictionary<string, Seat> _seats = [];
     private Dictionary<string, string> _deviceToSeatMap = []; // deviceId -> seatId
+    private Dictionary<string, string> _displayToSeatMap = []; // displayId -> seatId
 
     public SeatManager(
         ILogger<SeatManager> logger,
@@ -106,6 +109,11 @@ public class SeatManager : ISeatManager
             {
                 _deviceToSeatMap[deviceId] = seat.Id;
             }
+
+            foreach (var displayId in seat.DisplayIds)
+            {
+                _displayToSeatMap[displayId] = seat.Id;
+            }
         }
         return persisted;
     }
@@ -127,7 +135,7 @@ public class SeatManager : ISeatManager
 
         var seat = _seats[seatId];
 
-        // Unassign all devices from this seat
+        // Unassign all devices and displays from this seat
         var devicesToUnassign = _deviceToSeatMap
             .Where(kvp => kvp.Value == seatId)
             .Select(kvp => kvp.Key)
@@ -136,6 +144,16 @@ public class SeatManager : ISeatManager
         foreach (var deviceId in devicesToUnassign)
         {
             _deviceToSeatMap.Remove(deviceId);
+        }
+
+        var displaysToUnassign = _displayToSeatMap
+            .Where(kvp => kvp.Value == seatId)
+            .Select(kvp => kvp.Key)
+            .ToList();
+
+        foreach (var displayId in displaysToUnassign)
+        {
+            _displayToSeatMap.Remove(displayId);
         }
 
         _seats.Remove(seatId);
@@ -204,6 +222,54 @@ public class SeatManager : ISeatManager
 
         _deviceToSeatMap.Remove(deviceId);
         _logger.LogInformation($"Device {deviceId} unassigned from seat {seatId}");
+    }
+
+    public async Task AssignDisplayToSeatAsync(string seatId, string displayId)
+    {
+        var seat = await GetSeatAsync(seatId);
+        if (seat == null)
+            throw new InvalidOperationException($"Seat '{seatId}' not found");
+
+        // Unlike devices, there's no persisted display registry to validate displayId against —
+        // OpenMultiSeat.Displays.DisplayEnumerator has no persistence layer, so displayId is
+        // trusted as coming straight from a live EnumerateDisplaysAsync() call.
+        if (_displayToSeatMap.TryGetValue(displayId, out var existingSeat))
+        {
+            if (existingSeat == seatId)
+            {
+                _logger.LogInformation($"Display {displayId} already assigned to seat {seatId}");
+                return;
+            }
+
+            throw new InvalidOperationException(
+                $"Display '{displayId}' is already assigned to seat '{existingSeat}'");
+        }
+
+        if (!seat.DisplayIds.Contains(displayId))
+            seat.DisplayIds.Add(displayId);
+
+        _displayToSeatMap[displayId] = seatId;
+        await UpdateSeatAsync(seat);
+        _logger.LogInformation($"Display {displayId} assigned to seat {seatId}");
+    }
+
+    public async Task UnassignDisplayFromSeatAsync(string displayId)
+    {
+        if (!_displayToSeatMap.TryGetValue(displayId, out var seatId))
+        {
+            _logger.LogWarning($"Display {displayId} not assigned to any seat");
+            return;
+        }
+
+        var seat = await GetSeatAsync(seatId);
+        if (seat != null)
+        {
+            seat.DisplayIds.Remove(displayId);
+            await UpdateSeatAsync(seat);
+        }
+
+        _displayToSeatMap.Remove(displayId);
+        _logger.LogInformation($"Display {displayId} unassigned from seat {seatId}");
     }
 
     public async Task<IReadOnlyList<ValidationError>> ValidateConfigurationAsync()
@@ -336,16 +402,22 @@ public class SeatManager : ISeatManager
 
         _seats.Clear();
         _deviceToSeatMap.Clear();
+        _displayToSeatMap.Clear();
 
         foreach (var seat in config.Seats)
         {
             _seats[seat.Id] = seat;
             await _persistence.SaveSeatAsync(seat);
 
-            // Rebuild device-to-seat map
+            // Rebuild device-to-seat and display-to-seat maps
             foreach (var deviceId in seat.KeyboardIds.Concat(seat.MouseIds))
             {
                 _deviceToSeatMap[deviceId] = seat.Id;
+            }
+
+            foreach (var displayId in seat.DisplayIds)
+            {
+                _displayToSeatMap[displayId] = seat.Id;
             }
         }
 

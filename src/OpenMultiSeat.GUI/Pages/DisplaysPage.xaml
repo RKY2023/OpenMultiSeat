@@ -3,10 +3,36 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Title="Displays">
     <Grid Margin="20">
-        <StackPanel>
-            <TextBlock Text="Displays" FontSize="20" FontWeight="Bold" Margin="0,0,0,20"/>
-            <TextBlock Text="Configuration page for Displays" FontSize="12" Foreground="#666666"/>
-            <Button Content="Configure Displays" Click="OnConfigure" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,10,0,0"/>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="Displays" FontSize="20" FontWeight="Bold" Margin="0,0,0,10"/>
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,15">
+            <Button Content="Scan Displays" Click="OnScanDisplays" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,0,10,0"/>
+            <Button Content="Assign to Seat..." Click="OnAssignToSeat" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,0,10,0"/>
+            <Button Content="Unassign" Click="OnUnassign" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,0,10,0"/>
+            <TextBlock x:Name="StatusText" VerticalAlignment="Center" Foreground="#666666" FontSize="12"/>
         </StackPanel>
+
+        <Grid Grid.Row="2">
+            <TextBlock x:Name="EmptyStateText" Text="No displays detected yet. Click &quot;Scan Displays&quot;."
+                       Foreground="#888888" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center"
+                       Visibility="Collapsed"/>
+            <DataGrid x:Name="DisplaysGrid" AutoGenerateColumns="False" IsReadOnly="True"
+                      SelectionMode="Single" Background="White" BorderBrush="#CCCCCC">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Display" Binding="{Binding DeviceName}" Width="200"/>
+                    <DataGridTextColumn Header="Resolution" Binding="{Binding Resolution}" Width="110"/>
+                    <DataGridTextColumn Header="Refresh Rate" Binding="{Binding RefreshRateDisplay}" Width="100"/>
+                    <DataGridTextColumn Header="Connection" Binding="{Binding ConnectionType}" Width="100"/>
+                    <DataGridCheckBoxColumn Header="Primary" Binding="{Binding IsPrimary}" Width="70"/>
+                    <DataGridTextColumn Header="Assigned To" Binding="{Binding AssignedSeatDisplay}" Width="150"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Grid>
     </Grid>
 </Page>

@@ -34,8 +34,8 @@ If a display or device is hot-plugged while ASTER is running, a **"Configuration
 
 This maps to OpenMultiSeat's **Seats** page. Seat management itself is now real: a data grid lists every configured `Seat` (name, Windows user, device/display counts, status, enabled), with working **Create Seat…** and **Delete Selected** actions bound to `ISeatManager`/`SeatPersistence`. What's still missing is everything ASTER's Workplaces tab uses a seat list *for* — assigning hardware to a seat:
 
-- No unassigned/common-devices device pool or per-seat assign/unassign controls yet, even though the backend it needs (`IDevicePersistence`, `HidDeviceEnumerator`, `SeatManager.AssignDeviceToSeatAsync`) already exists and is exercised correctly by the Devices page.
-- No display/audio assignment UI (`IDisplayEnumerator`/`DisplayEnumerator`, `AudioDevice`) wiring into a seat.
+- Device assignment (keyboard/mouse) and display assignment are both real, but live on the **Devices** and **Displays** pages respectively rather than inside a unified Workplaces-style hardware pool — there's no single "System" area listing every unassigned device and display together the way ASTER's tab does.
+- No audio assignment UI (`OpenMultiSeat.Audio`) wiring into a seat yet.
 - No per-seat context menu actions yet — rename seat, assign a Windows user (see [User Account for Workstation](user-account-for-workstation.md)), start/restart the seat's session via `OpenMultiSeat.Sessions`' `SessionManager`.
 
 [Assign CPU Cores](assign-cpu-cores.md) — one item from ASTER's tab-wide hamburger menu above — is also implemented, reachable from the Settings page rather than from this tab (there's no tab-wide hamburger menu here yet).

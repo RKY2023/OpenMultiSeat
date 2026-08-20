@@ -54,6 +54,76 @@ public class SeatManagerTests
         await manager.AssignDeviceToSeatAsync("seat-a", "device-1", InputDeviceType.Keyboard);
     }
 
+    [TestMethod]
+    public async Task AssignDisplayToSeatAsync_DisplayAlreadyAssignedOnDisk_FreshManagerInstanceStillRejectsReassignment()
+    {
+        // Same regression as the device-assignment test above, for _displayToSeatMap.
+        var seatPersistence = new FakeSeatPersistence();
+        var devicePersistence = new FakeDevicePersistence();
+
+        await seatPersistence.SaveSeatAsync(new Seat { Id = "seat-a", Name = "Seat A", DisplayIds = ["display-1"] });
+        await seatPersistence.SaveSeatAsync(new Seat { Id = "seat-b", Name = "Seat B" });
+
+        var manager = new SeatManager(NullLogger<SeatManager>.Instance, seatPersistence, devicePersistence);
+        await manager.GetAllSeatsAsync();
+
+        await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+            () => manager.AssignDisplayToSeatAsync("seat-b", "display-1"));
+    }
+
+    [TestMethod]
+    public async Task AssignDisplayToSeatAsync_SameSeatAlreadyOwnsDisplay_IsANoOpNotAnError()
+    {
+        var seatPersistence = new FakeSeatPersistence();
+        var devicePersistence = new FakeDevicePersistence();
+
+        await seatPersistence.SaveSeatAsync(new Seat { Id = "seat-a", Name = "Seat A", DisplayIds = ["display-1"] });
+
+        var manager = new SeatManager(NullLogger<SeatManager>.Instance, seatPersistence, devicePersistence);
+        await manager.GetAllSeatsAsync();
+
+        await manager.AssignDisplayToSeatAsync("seat-a", "display-1");
+    }
+
+    [TestMethod]
+    public async Task UnassignDisplayFromSeatAsync_RemovesFromDisplayIds()
+    {
+        var seatPersistence = new FakeSeatPersistence();
+        var devicePersistence = new FakeDevicePersistence();
+
+        await seatPersistence.SaveSeatAsync(new Seat { Id = "seat-a", Name = "Seat A", DisplayIds = ["display-1"] });
+
+        var manager = new SeatManager(NullLogger<SeatManager>.Instance, seatPersistence, devicePersistence);
+        await manager.GetAllSeatsAsync();
+
+        await manager.UnassignDisplayFromSeatAsync("display-1");
+
+        var seat = await manager.GetSeatAsync("seat-a");
+        Assert.IsFalse(seat!.DisplayIds.Contains("display-1"));
+
+        // Should now be assignable to a different seat without throwing.
+        await seatPersistence.SaveSeatAsync(new Seat { Id = "seat-b", Name = "Seat B" });
+        await manager.AssignDisplayToSeatAsync("seat-b", "display-1");
+    }
+
+    [TestMethod]
+    public async Task DeleteSeatAsync_FreesItsAssignedDisplayForReassignment()
+    {
+        var seatPersistence = new FakeSeatPersistence();
+        var devicePersistence = new FakeDevicePersistence();
+
+        await seatPersistence.SaveSeatAsync(new Seat { Id = "seat-a", Name = "Seat A", DisplayIds = ["display-1"] });
+        await seatPersistence.SaveSeatAsync(new Seat { Id = "seat-b", Name = "Seat B" });
+
+        var manager = new SeatManager(NullLogger<SeatManager>.Instance, seatPersistence, devicePersistence);
+        await manager.GetAllSeatsAsync();
+
+        await manager.DeleteSeatAsync("seat-a");
+
+        // display-1 should no longer be considered assigned once its owning seat is gone.
+        await manager.AssignDisplayToSeatAsync("seat-b", "display-1");
+    }
+
     private sealed class FakeSeatPersistence : ISeatPersistence
     {
         private readonly Dictionary<string, Seat> _seats = [];
