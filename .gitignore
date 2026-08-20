@@ -27,6 +27,9 @@ out/
 # Build folder
 [Bb]uild/
 
+# dotnet publish output (standalone .exe builds - large binaries, not source)
+publish/
+
 # NuGet
 *.nupkg
 *.snupkg
