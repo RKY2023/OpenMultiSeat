@@ -8,7 +8,7 @@ The "Workplace Tab Settings" window configures how workplaces and their connecte
 
 ## OpenMultiSeat status
 
-🚧 **Partially implemented** — the two options with a real equivalent are wired up; icon size and tile distribution have no equivalent to control, since the Seats page is a list, not a tile layout.
+🚧 **Partially implemented** — the two options with a real equivalent are wired up. Icon size and tile distribution still have nothing to control: there is now a real tile layout ([Tile Layout window](workplaces-tab.md), opened from the Seats page), but its columns are a fixed width sized to the seat count, not a resizable canvas with icons that could be made bigger/smaller or redistributed.
 
 A new **"View Settings…"** button on the Seats page opens `WorkplaceTabSettingsWindow`, backed by a real `WorkplaceViewSettings` record (`%AppData%\OpenMultiSeat\view-settings.json`, via `WorkplaceViewSettingsPersistence`):
 

@@ -15,7 +15,7 @@
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0" Text="Workplace Tab Settings" FontSize="18" FontWeight="Bold" Foreground="White" Margin="0,0,0,5"/>
-        <TextBlock Grid.Row="1" Text="Icon size and tile layout aren't modeled here — the Seats page is a list, not a tile view, so there's nothing for those ASTER options to control." Foreground="#888888" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,15"/>
+        <TextBlock Grid.Row="1" Text="These two settings apply to the Displays/Devices pages' grids. The separate Tile Layout window (Seats page → &quot;Tile Layout...&quot;) has its own fixed column layout — icon size and tile-distribution aren't adjustable there, since columns are sized to fit the seat count rather than a resizable canvas." Foreground="#888888" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,15"/>
 
         <CheckBox x:Name="ShowUnassignedDisplaysCheckBox" Grid.Row="2" Content="Show displays not linked to any seat (Displays page)" Foreground="White" Margin="0,0,0,15"/>
 

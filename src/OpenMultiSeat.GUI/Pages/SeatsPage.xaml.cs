@@ -143,6 +143,16 @@ public partial class SeatsPage : Page
         window.ShowDialog();
     }
 
+    private async void OnTileLayout(object sender, RoutedEventArgs e)
+    {
+        var window = new WorkplaceTileLayoutWindow(_seatManager, _devicePersistence, _displayEnumerator, _audioManager)
+        {
+            Owner = Window.GetWindow(this)
+        };
+        window.ShowDialog();
+        await LoadAsync(); // device/display counts on this page's grid may have changed via drag-and-drop
+    }
+
     private void OnSeatsGridDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
         if (SeatsGrid.SelectedItem is SeatRow)

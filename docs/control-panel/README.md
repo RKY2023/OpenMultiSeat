@@ -17,7 +17,7 @@ Each page states **what ASTER's equivalent does**, then **OpenMultiSeat's status
 |---|---|---|
 | [Main Window of ASTER Control Panel](aster-control-panel-main-window.md) | Main window | ✅ Implemented |
 | ["General Settings" Tab](general-settings-tab.md) | General Settings tab | 🚧 Partial — "Assign CPU Cores…" and a real Workplace Start Mode setting (Manual/At System Startup/Via Workplace 1, wired to real Windows Scheduled Tasks) plus "Start Workplaces Now" are real; seat passwords use DPAPI LocalMachine scope so SYSTEM can decrypt them at boot, at the cost of no longer being a secret from other local accounts (see the page for the trade-off) |
-| ["Workplaces" Tab](workplaces-tab.md) | Workplaces tab | 🚧 Partial — seat list/create/delete, account config, and device/display/audio assignment all real, with both a per-seat "Configure…" view and a shared cross-seat **System** page |
+| ["Workplaces" Tab](workplaces-tab.md) | Workplaces tab | 🚧 Partial — seat list/create/delete, account config, and device/display/audio assignment all real, with a per-seat "Configure…" view, a shared cross-seat **System** page, and a real drag-and-drop **Tile Layout** window (System + one column per seat) |
 | ["About" Tab](about-tab.md) | About tab | ✅ Implemented |
 
 ## Licensing & Activation (ASTER-only — no equivalent needed in OpenMultiSeat)
@@ -37,7 +37,7 @@ Each page states **what ASTER's equivalent does**, then **OpenMultiSeat's status
 | Page | ASTER equivalent | Status |
 |---|---|---|
 | [The 'User Account for Workstation' Window](user-account-for-workstation.md) | User Account for Workstation | 🚧 Partial — real account/password config with DPAPI-encrypted storage; verified credential-based process launch (`CreateProcessWithLogonW`) via "Test Launch…", not yet wired to automatic seat start |
-| ["Workplace Tab Settings" Window](workplace-tab-settings.md) | Workplace Tab Settings | 🚧 Partial — real unlinked-displays filter + new-device highlight window; no icon size/tile distribution (no tile layout to control) |
+| ["Workplace Tab Settings" Window](workplace-tab-settings.md) | Workplace Tab Settings | 🚧 Partial — real unlinked-displays filter + new-device highlight window; a real Tile Layout window exists now (see [Workplaces Tab](workplaces-tab.md)) but its columns are a fixed layout, not resizable/redistributable, so icon size/tile distribution still have nothing to control |
 | ["Devices to Workplace(s) Assignment" Window](devices-to-workplace-assignment.md) | Devices to Workplace(s) Assignment | 🚧 Partial — exclusive single-seat assignment works (keyboard/mouse, plus camera/USB/Bluetooth as ownership records), no "To All" shared mode |
 | ["Confirm Device Destination" Window](confirm-device-destination.md) | Confirm Device Destination | 🚧 Partial — real before/after move confirm on every Assign flow; no drag-and-drop or batched multi-device table |
 | ["Assigning Video Outputs" Window](assigning-video-outputs.md) | Assigning Video Outputs | 🚧 Partial — real scan + assignment, no manual output remapping or clone toggle |
