@@ -54,8 +54,19 @@ internal static class RawInputInterop
     [DllImport("user32.dll", SetLastError = true)]
     public static extern uint GetRawInputData(IntPtr hRawInput, uint uiCommand, IntPtr pData, ref uint pcbSize, uint cbSizeHeader);
 
+    // Two overloads of the SAME native function, mirroring HidDeviceEnumerator/NativeMethods.cs
+    // exactly (down to the RIDI_DEVICENAME usage) rather than inventing a different call pattern:
+    // the IntPtr overload for the first, size-query call (pData=IntPtr.Zero), the StringBuilder
+    // overload for the second, real-fetch call. Passing `null` to a StringBuilder-marshaled
+    // parameter for the size query (this file's original version) is not the same thing as
+    // passing IntPtr.Zero to the IntPtr overload -- that mismatch was the actual bug behind
+    // "indicate never fires for keyboard/mouse": the size query silently came back empty every
+    // time, so GetDevicePath always returned null before ever reaching StableId resolution.
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern uint GetRawInputDeviceInfo(IntPtr hDevice, uint uiCommand, IntPtr pData, ref uint pcbData);
+
     [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-    public static extern uint GetRawInputDeviceInfo(IntPtr hDevice, uint uiCommand, System.Text.StringBuilder pData, ref uint pcbData);
+    private static extern uint GetRawInputDeviceInfo(IntPtr hDevice, uint uiCommand, System.Text.StringBuilder pData, ref uint pcbData);
 
     /// <summary>Registers this window (by HWND) to receive WM_INPUT for keyboard and mouse
     /// devices while it has focus. Returns false if registration failed (rare -- e.g. another
@@ -113,13 +124,13 @@ internal static class RawInputInterop
     public static string? GetDevicePath(IntPtr hDevice)
     {
         uint size = 0;
-        if (GetRawInputDeviceInfo(hDevice, RIDI_DEVICENAME, null!, ref size) != 0)
+        if (GetRawInputDeviceInfo(hDevice, RIDI_DEVICENAME, IntPtr.Zero, ref size) != 0)
             return null;
         if (size == 0)
             return null;
 
         var buffer = new System.Text.StringBuilder((int)size);
-        return GetRawInputDeviceInfo(hDevice, RIDI_DEVICENAME, buffer, ref size) == unchecked((uint)-1)
+        return GetRawInputDeviceInfo(hDevice, RIDI_DEVICENAME, buffer, ref size) == 0
             ? null
             : buffer.ToString();
     }

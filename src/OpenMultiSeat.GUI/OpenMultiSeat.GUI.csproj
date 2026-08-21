@@ -40,6 +40,13 @@
     <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.0" />
     <PackageReference Include="System.Management" Version="9.0.0" />
+    <!-- Live camera preview for the Tile Layout window's "Indicate device" on Camera tiles.
+         AForge.Video.DirectShow: a thin, purpose-built DirectShow wrapper (enumerate video input
+         devices, get a NewFrame event per captured frame), chosen over WinRT's MediaCapture /
+         CaptureElement, which would require retargeting this project to a windows10.0.xxxxx TFM;
+         AForge works directly on plain net9.0-windows. -->
+    <PackageReference Include="AForge.Video.DirectShow" Version="2.2.5" />
+    <PackageReference Include="System.Drawing.Common" Version="9.0.0" />
   </ItemGroup>
 
 </Project>

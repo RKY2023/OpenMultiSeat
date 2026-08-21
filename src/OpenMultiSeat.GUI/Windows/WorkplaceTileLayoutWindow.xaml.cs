@@ -1,10 +1,14 @@
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using System.Windows.Threading;
+using AForge.Video;
+using AForge.Video.DirectShow;
 using OpenMultiSeat.Audio;
 using OpenMultiSeat.Core;
 using OpenMultiSeat.Devices;
@@ -53,7 +57,9 @@ public partial class WorkplaceTileLayoutWindow : Window
     private readonly List<(string ResourceId, Border Border)> _audioTiles = [];
 
     private HwndSource? _hwndSource;
+    private bool _rawInputRegistered;
     private DispatcherTimer? _audioMeterTimer;
+    private readonly List<VideoCaptureDevice> _activeCameraCaptures = [];
     private readonly HashSet<string> _audioTilesCurrentlyLive = [];
 
     public WorkplaceTileLayoutWindow(
@@ -80,7 +86,7 @@ public partial class WorkplaceTileLayoutWindow : Window
             return;
 
         _hwndSource.AddHook(WndProc);
-        RawInputInterop.Register(_hwndSource.Handle);
+        _rawInputRegistered = RawInputInterop.Register(_hwndSource.Handle);
 
         _audioMeterTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
         _audioMeterTimer.Tick += async (_, _) => await PollAudioMetersAsync();
@@ -92,6 +98,11 @@ public partial class WorkplaceTileLayoutWindow : Window
         _audioMeterTimer?.Stop();
         _hwndSource?.RemoveHook(WndProc);
         RawInputInterop.Unregister();
+
+        // Never leave a camera light on after this window closes -- stop every capture still
+        // running (a preview the user right-clicked but didn't wait out, or several in a row).
+        foreach (var capture in _activeCameraCaptures.ToList())
+            StopCameraCapture(capture);
     }
 
     private enum TileKind { Display, Keyboard, Mouse, AudioPlayback, AudioCapture, Other }
@@ -102,6 +113,12 @@ public partial class WorkplaceTileLayoutWindow : Window
         public required string Label { get; init; }
         public required TileKind Kind { get; init; }
         public string? CurrentSeatId { get; init; }
+
+        /// <summary>The underlying DeviceRecord.DeviceType (e.g. "Camera", "USB", "Bluetooth")
+        /// for a Kind.Other tile -- null for every other Kind. Used only to single out cameras
+        /// for a live-preview Indicate device instead of the plain in-app blink every other
+        /// Other-kind device gets.</summary>
+        public string? DeviceType { get; init; }
     }
 
     private sealed class TileColumn
@@ -191,7 +208,8 @@ public partial class WorkplaceTileLayoutWindow : Window
                 ResourceId = d.StableId,
                 Label = d.ProductName ?? d.StableId,
                 Kind = kind,
-                CurrentSeatId = currentSeatId
+                CurrentSeatId = currentSeatId,
+                DeviceType = kind == TileKind.Other ? d.DeviceType : null
             });
         }
 
@@ -226,9 +244,12 @@ public partial class WorkplaceTileLayoutWindow : Window
             ColumnsPanel.Children.Add(CreateColumn(column, allTiles.Where(t => t.CurrentSeatId == seat.Id).ToList()));
         }
 
-        StatusText.Text = seats.Count == 0
+        var baseStatus = seats.Count == 0
             ? "No seats yet -- create one on the Seats page, then drag devices here."
             : $"{seats.Count} seat(s), {allTiles.Count} resource(s).";
+        StatusText.Text = _rawInputRegistered
+            ? baseStatus
+            : $"{baseStatus} (Keyboard/Mouse press-to-identify unavailable -- Raw Input registration failed for this window.)";
     }
 
     // ---- Column construction ----
@@ -381,6 +402,7 @@ public partial class WorkplaceTileLayoutWindow : Window
         {
             TileKind.Display => BuildDisplayIndicateContextMenu(item),
             TileKind.Keyboard or TileKind.Mouse or TileKind.AudioPlayback or TileKind.AudioCapture => null,
+            TileKind.Other when item.DeviceType == "Camera" => BuildCameraIndicateContextMenu(item, border),
             _ => BuildBlinkContextMenu(border)
         };
 
@@ -450,6 +472,15 @@ public partial class WorkplaceTileLayoutWindow : Window
         return menu;
     }
 
+    private ContextMenu BuildCameraIndicateContextMenu(TileItem item, Border border)
+    {
+        var menu = new ContextMenu();
+        var indicate = new MenuItem { Header = "Indicate device" };
+        indicate.Click += (_, _) => ShowCameraPreview(item, border);
+        menu.Items.Add(indicate);
+        return menu;
+    }
+
     /// <summary>Alternates the tile's border between its normal (transparent) state and a bright
     /// highlight for a few seconds, then restores it -- a GUI-only "which one is this" aid, used
     /// only for the one category with no real signal to react to (see class doc comment).</summary>
@@ -498,6 +529,131 @@ public partial class WorkplaceTileLayoutWindow : Window
             display.PositionX, display.PositionY, display.Width, display.Height,
             VisualTreeHelper.GetDpi(this));
         overlay.Show();
+    }
+
+    // ---- Camera: live video preview ----
+
+    /// <summary>
+    /// Starts a real, live camera feed inside the tile itself for a few seconds, then stops the
+    /// capture and restores the icon. Matches the requested device to a DirectShow video input by
+    /// friendly name -- there's no shared stable ID between GeneralDeviceEnumerator's WMI-sourced
+    /// DeviceRecord and DirectShow's own device list the way HidDeviceEnumerator's raw-input path
+    /// has one (see RawInputInterop), so an exact-then-partial name match is the closest available
+    /// correlation; disclosed rather than silently assumed reliable, since two cameras could share
+    /// a generic name (e.g. two identical webcam models).
+    /// </summary>
+    private void ShowCameraPreview(TileItem item, Border border)
+    {
+        FilterInfo? match;
+        try
+        {
+            var videoDevices = new FilterInfoCollection(FilterCategory.VideoInputDevice);
+            match = videoDevices.Cast<FilterInfo>().FirstOrDefault(d =>
+                string.Equals(d.Name, item.Label, StringComparison.OrdinalIgnoreCase));
+            match ??= videoDevices.Cast<FilterInfo>().FirstOrDefault(d =>
+                d.Name.Contains(item.Label, StringComparison.OrdinalIgnoreCase) ||
+                item.Label.Contains(d.Name, StringComparison.OrdinalIgnoreCase));
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Couldn't enumerate cameras: {ex.Message}", "Indicate Device", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        if (match == null)
+        {
+            MessageBox.Show(
+                $"Couldn't find a camera matching \"{item.Label}\" among Windows' currently available video devices. " +
+                "It may be in use by another application, disconnected, or its camera driver name doesn't match its Windows device name exactly.",
+                "Indicate Device", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        VideoCaptureDevice videoSource;
+        try
+        {
+            videoSource = new VideoCaptureDevice(match.MonikerString);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Couldn't start camera \"{item.Label}\": {ex.Message}", "Indicate Device", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var originalContent = border.Child;
+        var image = new Image { Stretch = Stretch.UniformToFill };
+        border.Child = image;
+
+        videoSource.NewFrame += (_, e) =>
+        {
+            using var frame = (System.Drawing.Bitmap)e.Frame.Clone();
+            var bitmapSource = ConvertToBitmapSource(frame);
+            Dispatcher.BeginInvoke(() => image.Source = bitmapSource);
+        };
+
+        try
+        {
+            videoSource.Start();
+        }
+        catch (Exception ex)
+        {
+            border.Child = originalContent;
+            MessageBox.Show($"Couldn't start camera \"{item.Label}\": {ex.Message}", "Indicate Device", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        _activeCameraCaptures.Add(videoSource);
+
+        var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(6) };
+        timer.Tick += (_, _) =>
+        {
+            timer.Stop();
+            StopCameraCapture(videoSource);
+            border.Child = originalContent;
+        };
+        timer.Start();
+    }
+
+    /// <summary>Stops a running capture off the UI thread (SignalToStop/WaitForStop can take a
+    /// moment to actually release the device) without blocking the window while it does.</summary>
+    private void StopCameraCapture(VideoCaptureDevice videoSource)
+    {
+        _activeCameraCaptures.Remove(videoSource);
+        Task.Run(() =>
+        {
+            try
+            {
+                videoSource.SignalToStop();
+                videoSource.WaitForStop();
+            }
+            catch
+            {
+                // Best-effort cleanup -- the capture thread may already have exited.
+            }
+        });
+    }
+
+    [DllImport("gdi32.dll")]
+    private static extern bool DeleteObject(IntPtr hObject);
+
+    /// <summary>Converts one captured frame to a WPF-displayable, cross-thread-safe BitmapSource.
+    /// The intermediate GDI bitmap handle is explicitly deleted -- CreateBitmapSourceFromHBitmap
+    /// does not take ownership of it, and this runs once per captured frame (multiple times a
+    /// second), so a leaked handle here would exhaust the GDI object quota within seconds.</summary>
+    private static BitmapSource ConvertToBitmapSource(System.Drawing.Bitmap bitmap)
+    {
+        var hBitmap = bitmap.GetHbitmap();
+        try
+        {
+            var source = Imaging.CreateBitmapSourceFromHBitmap(
+                hBitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+            source.Freeze();
+            return source;
+        }
+        finally
+        {
+            DeleteObject(hBitmap);
+        }
     }
 
     // ---- Keyboard/Mouse: raw-input-triggered indicate ----
