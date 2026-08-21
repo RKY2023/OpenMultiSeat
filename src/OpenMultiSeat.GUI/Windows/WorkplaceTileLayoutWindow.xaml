@@ -13,7 +13,7 @@
 
         <TextBlock Grid.Row="0" Text="Tile Layout" FontSize="18" FontWeight="Bold" Foreground="White" Margin="0,0,0,5"/>
         <TextBlock Grid.Row="1" Foreground="#888888" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,10"
-                   Text="Drag a device, display, or audio endpoint onto a different column to reassign it -- dragging it back onto &quot;System&quot; unassigns it. Right-click a tile for &quot;Indicate device&quot;, which blinks its border here in the GUI so you can tell which physical device it is (not a real hardware LED -- most keyboards/mice/webcams have no addressable indicator OpenMultiSeat can control)."/>
+                   Text="Drag a device, display, or audio endpoint onto a different column to reassign it -- dragging it back onto &quot;System&quot; unassigns it. To identify a tile: press the physical key or move the physical mouse for Keyboards/Mice (this window is listening); right-click a Display tile for a big on-screen ID shown directly on that monitor; Audio tiles glow live on their own whenever that endpoint is actually carrying sound; right-click any Other-device tile for a plain in-app highlight (no live signal exists for cameras/USB/Bluetooth)."/>
 
         <ScrollViewer Grid.Row="2" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
             <StackPanel x:Name="ColumnsPanel" Orientation="Horizontal"/>
