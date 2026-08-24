@@ -94,6 +94,13 @@ public partial class WorkplaceTileLayoutWindow : Window
             ? "Raw input registered. Press any key or move any mouse -- this line will update."
             : "RegisterRawInputDevices FAILED (see status bar) -- keyboard/mouse indicate cannot work this session.");
 
+        // Columns are re-stretched to the current viewport height on every resize (see
+        // StretchColumnsToViewport) -- otherwise a column with only 1-2 tiles is only as tall as
+        // those tiles, leaving most of the window's empty space below it NOT part of the drop
+        // target, which is exactly what made dragging a device onto a sparsely-populated seat feel
+        // broken/finicky.
+        TileScrollViewer.SizeChanged += (_, _) => StretchColumnsToViewport();
+
         _audioMeterTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
         _audioMeterTimer.Tick += async (_, _) => await PollAudioMetersAsync();
         _audioMeterTimer.Start();
@@ -256,6 +263,26 @@ public partial class WorkplaceTileLayoutWindow : Window
         StatusText.Text = _rawInputRegistered
             ? baseStatus
             : $"{baseStatus} (Keyboard/Mouse press-to-identify unavailable -- Raw Input registration failed for this window.)";
+
+        StretchColumnsToViewport();
+    }
+
+    /// <summary>Sets every column's MinHeight to the ScrollViewer's current viewport height, so a
+    /// column with few or no tiles still offers its full visible height as a drop target instead of
+    /// only the small area its tiles actually occupy -- the "hard to drop into Seat 2" report this
+    /// fixes. Re-run on every ScrollViewer resize (see OnSourceInitialized) so it stays correct as
+    /// the window is resized, not just at load time.</summary>
+    private void StretchColumnsToViewport()
+    {
+        var viewportHeight = TileScrollViewer.ViewportHeight;
+        if (viewportHeight <= 0)
+            return;
+
+        foreach (var child in ColumnsPanel.Children)
+        {
+            if (child is Border column)
+                column.MinHeight = viewportHeight;
+        }
     }
 
     // ---- Column construction ----
@@ -268,6 +295,11 @@ public partial class WorkplaceTileLayoutWindow : Window
         var outer = new Border
         {
             Width = 230,
+            // A floor, not the real height -- StretchColumnsToViewport (called right after this
+            // column is added, and again on every resize) sets the real MinHeight from the
+            // ScrollViewer's current viewport so the drop target covers the column's full visible
+            // height, not just however tall its tiles happen to be.
+            MinHeight = 200,
             Margin = new Thickness(6, 0, 6, 6),
             Padding = new Thickness(10),
             Background = new SolidColorBrush(Color.FromRgb(0x1E, 0x1E, 0x1E)),

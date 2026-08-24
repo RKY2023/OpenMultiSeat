@@ -25,7 +25,7 @@
                        TextWrapping="Wrap" Text="Raw input diagnostic: no keyboard/mouse event seen yet."/>
         </Border>
 
-        <ScrollViewer Grid.Row="3" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+        <ScrollViewer x:Name="TileScrollViewer" Grid.Row="3" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
             <StackPanel x:Name="ColumnsPanel" Orientation="Horizontal"/>
         </ScrollViewer>
 

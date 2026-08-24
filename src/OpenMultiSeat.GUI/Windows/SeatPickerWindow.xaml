@@ -1,11 +1,10 @@
 <Window x:Class="OpenMultiSeat.GUI.Windows.SeatPickerWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    Title="Choose a Seat" Height="200" Width="380"
-    Background="#1E1E1E" WindowStartupLocation="CenterOwner" ResizeMode="NoResize">
+    Title="Choose a Seat" Height="220" Width="380" MinHeight="180" MinWidth="320"
+    Background="#1E1E1E" WindowStartupLocation="CenterOwner">
     <Grid Margin="20">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
@@ -13,9 +12,11 @@
 
         <TextBlock x:Name="TitleText" Grid.Row="0" FontSize="16" FontWeight="Bold" Foreground="White" Margin="0,0,0,15" TextWrapping="Wrap"/>
 
-        <ComboBox x:Name="SeatComboBox" Grid.Row="1" DisplayMemberPath="Name" Padding="8" FontSize="14"/>
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <ComboBox x:Name="SeatComboBox" DisplayMemberPath="Name" Padding="8" FontSize="14" VerticalAlignment="Top"/>
+        </ScrollViewer>
 
-        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
             <Button Content="OK" Click="OnOk" Background="#2D6CDF" Foreground="White" Padding="16,8" Margin="0,0,10,0" IsDefault="True"/>
             <Button Content="Cancel" Click="OnCancel" Background="#3D3D3D" Foreground="White" Padding="16,8" IsCancel="True"/>
         </StackPanel>
