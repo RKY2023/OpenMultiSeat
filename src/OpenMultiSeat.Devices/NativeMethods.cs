@@ -105,12 +105,22 @@ internal static partial class NativeMethods
         public uint Type;
     }
 
-    [Flags]
+    // Real Win32 RIM_TYPE* values (WinUser.h): RIM_TYPEMOUSE=0, RIM_TYPEKEYBOARD=1, RIM_TYPEHID=2.
+    // This previously read { Mouse = 1, Keyboard = 2, Hid = 4 } with a [Flags] attribute -- wrong on
+    // both counts: these three are mutually-exclusive tag values reported in
+    // RAWINPUTDEVICELIST.dwType, not a bitmask, and the numbers didn't match the real constants at
+    // all. The practical effect: every real mouse (native dwType=0) failed to match any declared
+    // member and fell through to InputDeviceType.Other; every real keyboard (dwType=1) matched the
+    // old Mouse=1 and was saved as a mouse; every generic HID collection (dwType=2) matched the old
+    // Keyboard=2 and was saved as a keyboard. This is very likely the actual source of the
+    // "DeviceRecord.DeviceType is unreliable for keyboards/mice" behavior worked around elsewhere in
+    // this codebase (AssignDeviceToSeatWindow's manual radio button, WorkplaceTileLayoutWindow's
+    // list-membership-first TileKind derivation) -- not an inherent Windows limitation, a wrong enum.
     public enum RawInputDeviceType : uint
     {
-        Mouse = 1,
-        Keyboard = 2,
-        Hid = 4
+        Mouse = 0,
+        Keyboard = 1,
+        Hid = 2
     }
 
     [DllImport(User32Dll, SetLastError = true)]

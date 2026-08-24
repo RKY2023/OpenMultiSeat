@@ -60,6 +60,7 @@ public partial class WorkplaceTileLayoutWindow : Window
 
     private HwndSource? _hwndSource;
     private bool _rawInputRegistered;
+    private int _rawInputEventCount;
     private DispatcherTimer? _audioMeterTimer;
     private readonly List<VideoCaptureDevice> _activeCameraCaptures = [];
     private readonly HashSet<string> _audioTilesCurrentlyLive = [];
@@ -89,6 +90,9 @@ public partial class WorkplaceTileLayoutWindow : Window
 
         _hwndSource.AddHook(WndProc);
         _rawInputRegistered = RawInputInterop.Register(_hwndSource.Handle);
+        SetRawInputDiagnostic(_rawInputRegistered
+            ? "Raw input registered. Press any key or move any mouse -- this line will update."
+            : "RegisterRawInputDevices FAILED (see status bar) -- keyboard/mouse indicate cannot work this session.");
 
         _audioMeterTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
         _audioMeterTimer.Tick += async (_, _) => await PollAudioMetersAsync();
@@ -664,30 +668,60 @@ public partial class WorkplaceTileLayoutWindow : Window
     {
         if (msg == RawInputInterop.WM_INPUT)
         {
+            _rawInputEventCount++;
             var hDevice = RawInputInterop.GetSourceDevice(lParam);
-            if (hDevice != IntPtr.Zero)
-                _ = HandleRawInputAsync(hDevice);
+            if (hDevice == IntPtr.Zero)
+                SetRawInputDiagnostic($"event #{_rawInputEventCount}: WM_INPUT received but GetSourceDevice/RID_HEADER returned no device handle.");
+            else
+                _ = HandleRawInputAsync(hDevice, _rawInputEventCount);
         }
 
         return IntPtr.Zero;
     }
 
-    private async Task HandleRawInputAsync(IntPtr hDevice)
+    /// <summary>Resolves a raw input event's originating device back to a tile and blinks it,
+    /// reporting exactly which stage it got to (or failed at) into RawInputDiagnosticText -- added
+    /// after two rounds of code-review-only fixes here (P/Invoke marshaling, then RIDEV_INPUTSINK)
+    /// still didn't resolve a user report of "still not working"; this makes the next failure mode,
+    /// whatever it is, visible from inside the app instead of another guess.</summary>
+    private async Task HandleRawInputAsync(IntPtr hDevice, int eventNumber)
     {
         var devicePath = RawInputInterop.GetDevicePath(hDevice);
         if (string.IsNullOrEmpty(devicePath))
+        {
+            SetRawInputDiagnostic($"event #{eventNumber}: device handle 0x{hDevice:X} resolved, but GetDevicePath/RIDI_DEVICENAME returned nothing.");
             return;
+        }
 
         var hardwareId = RawInputInterop.ExtractHardwareId(devicePath);
         if (string.IsNullOrEmpty(hardwareId))
+        {
+            SetRawInputDiagnostic($"event #{eventNumber}: device path \"{devicePath}\" resolved, but ExtractHardwareId returned nothing.");
             return;
+        }
 
         var device = await _devicePersistence.GetDeviceByHardwareIdAsync(hardwareId);
         if (device == null)
+        {
+            SetRawInputDiagnostic($"event #{eventNumber}: hardware id \"{hardwareId}\" has no matching persisted device -- try Refresh or re-scanning on the Devices page.");
             return;
+        }
 
         if (_tileBordersByResourceId.TryGetValue(device.StableId, out var border))
+        {
+            SetRawInputDiagnostic($"event #{eventNumber}: matched \"{device.ProductName ?? device.StableId}\" -- blinking its tile now.");
             BlinkTile(border);
+        }
+        else
+        {
+            SetRawInputDiagnostic($"event #{eventNumber}: matched device \"{device.ProductName ?? device.StableId}\" (StableId {device.StableId}), but no tile in this window is registered for that id.");
+        }
+    }
+
+    private void SetRawInputDiagnostic(string text)
+    {
+        if (RawInputDiagnosticText != null)
+            RawInputDiagnosticText.Text = text;
     }
 
     // ---- Audio: live peak-level indicate ----
