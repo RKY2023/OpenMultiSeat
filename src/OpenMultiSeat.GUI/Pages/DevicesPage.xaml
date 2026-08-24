@@ -23,7 +23,7 @@
         <DataGrid Grid.Row="2" x:Name="DevicesGrid" AutoGenerateColumns="False" IsReadOnly="True"
                   SelectionMode="Single" Background="White" BorderBrush="#CCCCCC">
             <DataGrid.RowStyle>
-                <Style TargetType="DataGridRow">
+                <Style TargetType="DataGridRow" BasedOn="{StaticResource {x:Type DataGridRow}}">
                     <Style.Triggers>
                         <DataTrigger Binding="{Binding IsRecentlyAdded}" Value="True">
                             <Setter Property="Background" Value="#FFF3CD"/>
