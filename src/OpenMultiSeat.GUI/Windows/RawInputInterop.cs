@@ -4,10 +4,19 @@ namespace OpenMultiSeat.GUI.Windows;
 
 /// <summary>
 /// Minimal Win32 Raw Input P/Invoke surface for WorkplaceTileLayoutWindow's "press a key or move
-/// a mouse to identify it" Indicate-device behavior. Deliberately narrow: registers for keyboard
-/// and mouse raw input on this window only (no RIDEV_INPUTSINK), so events are delivered only
-/// while the Tile Layout window itself has focus -- not a global keylogger/mouse-hook, and nothing
-/// is captured once the window loses focus or closes (explicitly unregistered on Closed).
+/// a mouse to identify it" Indicate-device behavior.
+///
+/// Registers with RIDEV_INPUTSINK, so events are delivered whenever the Tile Layout window exists
+/// (not only while it happens to be the literal Win32 foreground window). Without that flag this
+/// was found to be unreliable in practice -- without RIDEV_INPUTSINK, Windows only delivers WM_INPUT
+/// while the target window is the actual foreground window, a stricter condition than WPF-level
+/// focus; something as small as this same window's own right-click context menu taking the
+/// foreground for a moment is enough to miss events, which is what made this silently never fire in
+/// testing even though registration itself succeeded and the parsing code was correct. The
+/// trade-off: while this window is open, any physical key press or mouse move anywhere on the
+/// system reaches WndProc, not just input aimed at this window. Still not a keylogger -- only
+/// RAWINPUTHEADER is parsed (see below), the actual key/movement data is discarded unread, and
+/// registration is undone the moment the window closes (Unregister, tied to Window.Closed).
 ///
 /// Only RAWINPUTHEADER is parsed (via RID_HEADER), not the full RAWINPUT union (RAWKEYBOARD/
 /// RAWMOUSE/RAWHID payloads) -- the header's hDevice is all that's needed to know *which physical
@@ -22,6 +31,7 @@ internal static class RawInputInterop
 {
     public const int WM_INPUT = 0x00FF;
 
+    private const uint RIDEV_INPUTSINK = 0x00000100;
     private const uint RIDEV_REMOVE = 0x00000001;
     private const uint RID_HEADER = 0x10000005;
     public const uint RIDI_DEVICENAME = 0x20000007;
@@ -69,15 +79,17 @@ internal static class RawInputInterop
     private static extern uint GetRawInputDeviceInfo(IntPtr hDevice, uint uiCommand, System.Text.StringBuilder pData, ref uint pcbData);
 
     /// <summary>Registers this window (by HWND) to receive WM_INPUT for keyboard and mouse
-    /// devices while it has focus. Returns false if registration failed (rare -- e.g. another
-    /// process already holds an exclusive raw input registration); the window still functions
-    /// without live indicate in that case, just without the auto-highlight-on-input behavior.</summary>
+    /// devices for as long as the window exists (RIDEV_INPUTSINK -- see the class doc comment for
+    /// why plain focus-scoped registration proved unreliable). Returns false if registration failed
+    /// (rare -- e.g. another process already holds an exclusive raw input registration); the window
+    /// still functions without live indicate in that case, just without the auto-highlight-on-input
+    /// behavior.</summary>
     public static bool Register(IntPtr hwnd)
     {
         var devices = new[]
         {
-            new RAWINPUTDEVICE { UsagePage = HidUsagePageGeneric, Usage = HidUsageKeyboard, Flags = 0, Target = hwnd },
-            new RAWINPUTDEVICE { UsagePage = HidUsagePageGeneric, Usage = HidUsageMouse, Flags = 0, Target = hwnd }
+            new RAWINPUTDEVICE { UsagePage = HidUsagePageGeneric, Usage = HidUsageKeyboard, Flags = RIDEV_INPUTSINK, Target = hwnd },
+            new RAWINPUTDEVICE { UsagePage = HidUsagePageGeneric, Usage = HidUsageMouse, Flags = RIDEV_INPUTSINK, Target = hwnd }
         };
 
         return RegisterRawInputDevices(devices, (uint)devices.Length, (uint)Marshal.SizeOf<RAWINPUTDEVICE>());

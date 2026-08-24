@@ -27,8 +27,10 @@ namespace OpenMultiSeat.GUI.Windows;
 /// "Indicate device" is a different, real mechanism per tile type rather than one generic
 /// right-click action, since each device category has its own genuinely-checkable signal:
 /// - Keyboard/Mouse: press the physical key or move the physical mouse. This window registers
-///   for Raw Input (RawInputInterop) while it has focus and blinks whichever tile's device
-///   generated the event — a real correlation to the actual hardware, not a manual click.
+///   for Raw Input (RawInputInterop, RIDEV_INPUTSINK — see its doc comment for why plain
+///   focus-scoped registration proved unreliable) for as long as it's open and blinks whichever
+///   tile's device generated the event — a real correlation to the actual hardware, not a manual
+///   click.
 /// - Display: right-click → shows a large ASTER-style "workplace.display-index" label
 ///   (DisplaySubNumbering) directly on that physical monitor for a few seconds
 ///   (DisplayIdentifyOverlayWindow) — verified by looking at the real screen, not a tile here.
