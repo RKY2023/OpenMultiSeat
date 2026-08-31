@@ -1,69 +1,87 @@
 <Window x:Class="OpenMultiSeat.GUI.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    Title="OpenMultiSeat Administration Console" Height="700" Width="1000" WindowStartupLocation="CenterScreen">
+    Title="OpenMultiSeat Administration Console" Height="720" Width="1080" MinHeight="560" MinWidth="860"
+    WindowStartupLocation="CenterScreen">
     <Window.Resources>
-        <Style x:Key="NavButtonStyle" TargetType="Button">
+        <Style x:Key="RailNavButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="#333333"/>
+            <Setter Property="Foreground" Value="{StaticResource Brush.Text.OnDark.Muted}"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="HorizontalAlignment" Value="Stretch"/>
-            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Padding" Value="14,0,14,0"/>
+            <Setter Property="FontSize" Value="13"/>
             <Setter Property="Cursor" Value="Hand"/>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#E8E8E8"/>
-                </Trigger>
-            </Style.Triggers>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid Height="38">
+                            <Rectangle x:Name="ActiveBar" Width="3" HorizontalAlignment="Left" Margin="0,4"
+                                       RadiusX="1.5" RadiusY="1.5" Fill="{StaticResource Brush.Accent}" Visibility="Collapsed"/>
+                            <Border x:Name="Bd" Background="{TemplateBinding Background}" Margin="8,0,8,0" CornerRadius="6" SnapsToDevicePixels="True">
+                                <ContentPresenter Margin="{TemplateBinding Padding}" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                            </Border>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource Brush.Rail.Hover}"/>
+                            </Trigger>
+                            <Trigger Property="Tag" Value="Active">
+                                <Setter TargetName="ActiveBar" Property="Visibility" Value="Visible"/>
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource Brush.Rail.Hover}"/>
+                                <Setter Property="Foreground" Value="{StaticResource Brush.Text.OnDark}"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
     </Window.Resources>
-    <DockPanel>
-        <!-- Title Bar -->
-        <StackPanel DockPanel.Dock="Top" Background="#2D2D2D" Margin="15">
-            <TextBlock Text="OpenMultiSeat Administration Console" Foreground="White" FontSize="20" FontWeight="Bold"/>
-            <TextBlock Text="System Configuration &amp; Management" Foreground="#CCCCCC" FontSize="12" Margin="0,5,0,0"/>
-        </StackPanel>
 
+    <DockPanel LastChildFill="True">
         <!-- Status Bar -->
-        <StatusBar DockPanel.Dock="Bottom" Background="#F0F0F0">
+        <StatusBar DockPanel.Dock="Bottom">
             <StatusBarItem>
-                <TextBlock x:Name="StatusText" Text="Ready" Foreground="Green"/>
+                <StackPanel Orientation="Horizontal">
+                    <Ellipse Width="7" Height="7" Fill="{StaticResource Brush.Success}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <TextBlock x:Name="StatusText" Text="Ready" Foreground="{StaticResource Brush.Text.Secondary}" FontSize="12"/>
+                </StackPanel>
             </StatusBarItem>
         </StatusBar>
 
-        <!-- Main Content -->
-        <Grid Background="#FFFFFF">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="200"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-
-            <!-- Left Navigation -->
-            <StackPanel Grid.Column="0" Background="#F5F5F5" Margin="0">
-                <StackPanel Background="#2D2D2D" Margin="15">
-                    <TextBlock Text="Configuration" Foreground="White" FontSize="14" FontWeight="Bold"/>
+        <!-- Left Navigation Rail -->
+        <Border DockPanel.Dock="Left" Width="232" Background="{StaticResource Brush.Rail.Bg}">
+            <DockPanel>
+                <!-- Brand -->
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="20,22,20,18">
+                    <Border Width="36" Height="36" CornerRadius="9" Background="{StaticResource Brush.Accent}">
+                        <TextBlock Text="OM" Foreground="White" FontWeight="Bold" FontSize="14"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Text="OpenMultiSeat" Foreground="{StaticResource Brush.Text.OnDark}" FontSize="15" FontWeight="SemiBold"/>
+                        <TextBlock Text="Admin Console" Foreground="{StaticResource Brush.Text.OnDark.Muted}" FontSize="11"/>
+                    </StackPanel>
                 </StackPanel>
-                <Button x:Name="DashboardBtn" Content="Dashboard" Click="OnNavigateDashboard"
-                    Style="{StaticResource NavButtonStyle}" Padding="15" Margin="0,0,0,1" FontSize="12"/>
-                <Button x:Name="DevicesBtn" Content="Devices" Click="OnNavigateDevices"
-                    Style="{StaticResource NavButtonStyle}" Padding="15" Margin="0,0,0,1" FontSize="12"/>
-                <Button x:Name="SeatsBtn" Content="Seats" Click="OnNavigateSeats"
-                    Style="{StaticResource NavButtonStyle}" Padding="15" Margin="0,0,0,1" FontSize="12"/>
-                <Button x:Name="DisplaysBtn" Content="Displays" Click="OnNavigateDisplays"
-                    Style="{StaticResource NavButtonStyle}" Padding="15" Margin="0,0,0,1" FontSize="12"/>
-                <Button x:Name="InputBtn" Content="Input Isolation" Click="OnNavigateInput"
-                    Style="{StaticResource NavButtonStyle}" Padding="15" Margin="0,0,0,1" FontSize="12"/>
-                <Button x:Name="AudioBtn" Content="Audio" Click="OnNavigateAudio"
-                    Style="{StaticResource NavButtonStyle}" Padding="15" Margin="0,0,0,1" FontSize="12"/>
-                <Separator Margin="0,10"/>
-                <Button x:Name="SettingsBtn" Content="Settings" Click="OnNavigateSettings"
-                    Style="{StaticResource NavButtonStyle}" Padding="15" Margin="0,0,0,1" FontSize="12"/>
-                <Button x:Name="AboutBtn" Content="About" Click="OnNavigateAbout"
-                    Style="{StaticResource NavButtonStyle}" Padding="15" Margin="0,0,0,1" FontSize="12"/>
-            </StackPanel>
+                <Separator DockPanel.Dock="Top" Background="{StaticResource Brush.Rail.Border}" Margin="20,0,20,10"/>
 
-            <!-- Content Area -->
-            <Frame Grid.Column="1" x:Name="ContentFrame" NavigationUIVisibility="Hidden" Margin="0"/>
-        </Grid>
+                <!-- Nav items -->
+                <StackPanel DockPanel.Dock="Top" Margin="0,4,0,0">
+                    <Button x:Name="DashboardBtn" Content="Dashboard" Click="OnNavigateDashboard" Style="{StaticResource RailNavButtonStyle}" Tag="Active"/>
+                    <Button x:Name="DevicesBtn" Content="Devices" Click="OnNavigateDevices" Style="{StaticResource RailNavButtonStyle}"/>
+                    <Button x:Name="SeatsBtn" Content="Seats" Click="OnNavigateSeats" Style="{StaticResource RailNavButtonStyle}"/>
+                    <Button x:Name="SystemBtn" Content="System" Click="OnNavigateSystem" Style="{StaticResource RailNavButtonStyle}"/>
+                    <Button x:Name="DisplaysBtn" Content="Displays" Click="OnNavigateDisplays" Style="{StaticResource RailNavButtonStyle}"/>
+                    <Button x:Name="InputBtn" Content="Input Isolation" Click="OnNavigateInput" Style="{StaticResource RailNavButtonStyle}"/>
+                    <Button x:Name="AudioBtn" Content="Audio" Click="OnNavigateAudio" Style="{StaticResource RailNavButtonStyle}"/>
+                    <Separator Background="{StaticResource Brush.Rail.Border}" Margin="20,10"/>
+                    <Button x:Name="SettingsBtn" Content="Settings" Click="OnNavigateSettings" Style="{StaticResource RailNavButtonStyle}"/>
+                    <Button x:Name="AboutBtn" Content="About" Click="OnNavigateAbout" Style="{StaticResource RailNavButtonStyle}"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- Main Content -->
+        <Frame x:Name="ContentFrame" NavigationUIVisibility="Hidden" Margin="0" Background="{StaticResource Brush.Background.App}"/>
     </DockPanel>
 </Window>

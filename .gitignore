@@ -27,6 +27,12 @@ out/
 # Build folder
 [Bb]uild/
 
+# dotnet publish output (standalone .exe builds - large binaries, not source)
+publish/
+
+# Local WiX Toolset extension cache (`wix extension add`) - downloaded tooling, not source
+.wix/
+
 # NuGet
 *.nupkg
 *.snupkg

@@ -6,8 +6,18 @@
         <StackPanel>
             <TextBlock Text="Settings" FontSize="20" FontWeight="Bold" Margin="0,0,0,20"/>
             <TextBlock Text="Configuration page for Settings" FontSize="12" Foreground="#666666"/>
-            <Button Content="Configure Settings" Click="OnConfigure" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,10,0,0" HorizontalAlignment="Left"/>
-            <Button Content="Assign CPU Cores..." Click="OnAssignCpuCores" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,10,0,0" HorizontalAlignment="Left"/>
+
+            <TextBlock Text="Workplace Start Mode" FontSize="14" FontWeight="Bold" Margin="0,24,0,4"/>
+            <TextBlock Text="How seats' sessions start — mirrors ASTER's General Settings tab." FontSize="12" Foreground="#666666" Margin="0,0,0,8"/>
+            <ComboBox x:Name="StartModeComboBox" Width="340" HorizontalAlignment="Left" SelectionChanged="OnStartModeChanged">
+                <ComboBoxItem Content="Manual (start with the button below)" Tag="Manual"/>
+                <ComboBoxItem Content="Automatically at system startup" Tag="AtSystemStartup"/>
+                <ComboBoxItem Content="Automatically via Workplace 1 login" Tag="AtFirstLogin"/>
+            </ComboBox>
+            <TextBlock x:Name="StartModeStatusText" FontSize="12" Foreground="#888888" Margin="0,6,0,0" TextWrapping="Wrap" Width="500" HorizontalAlignment="Left"/>
+            <Button x:Name="StartWorkplacesButton" Content="Start Workplaces Now" Click="OnStartWorkplaces" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,10,0,0" HorizontalAlignment="Left"/>
+
+            <Button Content="Assign CPU Cores..." Click="OnAssignCpuCores" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,24,0,0" HorizontalAlignment="Left"/>
         </StackPanel>
     </Grid>
 </Page>

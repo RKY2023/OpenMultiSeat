@@ -2,6 +2,10 @@
 
 This guide covers installation, configuration, and first-run setup for OpenMultiSeat.
 
+> **Accuracy note:** the [Installation](#installation) section below reflects the real MSI installer that now exists (`installer/Product.wxs`, built with the [WiX Toolset](https://wixtoolset.org/)). Most of what follows it — the multi-component installer options, the `tools\` folder of standalone Phase testers, "Export Configuration," "Generate Diagnostic Report," fast-user-switching-based multi-session testing — describes the project's original target design, not what's built today. See [Known Issues](known-issues.md) for what's actually wired up in the shipped GUI right now.
+
+
+
 ## Table of Contents
 
 1. [System Requirements](#system-requirements)
@@ -30,31 +34,31 @@ Installation requires administrator privileges.
 
 ## Installation
 
-### Step 1: Download Installer
-Download the latest OpenMultiSeat installer from GitHub:
+Two ways to get OpenMultiSeat running, both produced from the same `dotnet publish` output (a self-contained, single-file build — no separate .NET runtime install needed):
+
+### Option A: Standalone .exe (no install, no admin needed just to run it)
+`OpenMultiSeat.GUI.exe` is a self-contained single-file executable — copy it anywhere and double-click it, nothing to install or register. This is the fastest way to just run the app. (Some individual features — notably "Workplace Start Mode" on the Settings page — still need the app running as Administrator, regardless of which of these two options you used; see [General Settings tab](control-panel/general-settings-tab.md).)
+
+### Option B: `OpenMultiSeat-Setup.msi` (real installer)
+A genuine Windows Installer package, built from `installer/Product.wxs` with the [WiX Toolset](https://wixtoolset.org/) v5:
+
+1. Double-click `OpenMultiSeat-Setup.msi`. Since it installs per-machine under Program Files, Windows will prompt for Administrator via UAC.
+2. Accept the license (MIT — same text as the repo's `LICENSE` file), optionally change the install folder (default `C:\Program Files\OpenMultiSeat`), click Install.
+3. The installer places one file — `OpenMultiSeat.GUI.exe` — under the chosen folder, plus a Start Menu shortcut ("OpenMultiSeat") and a Desktop shortcut.
+
+There are no installer-time component checkboxes (Core/GUI/Testing Tools/Documentation) and no `tools\` folder of Phase testers — those don't exist as shipped artifacts; the single GUI exe is the whole product today.
+
+**Building the installer from source** (not needed just to install — only if you're rebuilding it):
 ```
-https://github.com/RKY2023/OpenMultiSeat/releases
+dotnet publish src\OpenMultiSeat.GUI\OpenMultiSeat.GUI.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -o publish\OpenMultiSeat.GUI
+dotnet tool install --global wix --version 5.0.2
+wix extension add WixToolset.UI.wixext/5.0.2
+wix build installer\Product.wxs -ext WixToolset.UI.wixext -arch x64 -d SourceDir=publish\OpenMultiSeat.GUI -b installer -o publish\OpenMultiSeat-Setup.msi
 ```
+(Version pinned to 5.0.2 deliberately — WiX v6/v7 require accepting a separate paid-use EULA (the "Open Source Maintenance Fee") to add extensions; v5.0.2 predates that and needs no EULA acceptance.)
 
-### Step 2: Run Installer
-1. Right-click `OpenMultiSeat-1.0.0-x64-setup.exe`
-2. Select "Run as administrator"
-3. Click "Next" on the Welcome screen
-4. Review and accept the license
-5. Select components to install:
-   - **Core Components**: Always required
-   - **GUI Application**: Recommended for configuration
-   - **Testing Tools**: Optional for troubleshooting
-   - **Documentation**: Optional for reference
-
-### Step 3: Choose Installation Directory
-Default: `C:\Program Files\OpenMultiSeat`
-
-Modify if needed, then click "Install"
-
-### Step 4: Complete Installation
-- Click "Finish" to close the installer
-- OpenMultiSeat Admin shortcut appears on Desktop and Start Menu
+### Uninstalling
+Installed via the MSI: Settings → Apps → Apps & features → "OpenMultiSeat" → Uninstall, same as any Windows Installer package (also removes the two shortcuts). Ran only from the standalone .exe: there's nothing installed to uninstall — just delete the .exe. Either way, `%AppData%\OpenMultiSeat\` (seat/device configuration, settings, logs) is left in place, matching the [Uninstallation](#uninstallation) section below.
 
 ## Initial Configuration
 

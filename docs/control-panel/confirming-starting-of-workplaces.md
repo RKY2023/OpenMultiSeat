@@ -8,4 +8,13 @@ When a user has chosen manual workplace startup (in the General Settings tab's "
 
 ## OpenMultiSeat status
 
-**📋 Planned** — no current implementation. OpenMultiSeat should offer an equivalent confirmation step before it starts seat sessions, gated behind a manual-startup preference on the [Settings page](general-settings-tab.md) (analogous to ASTER's "How to start Workplaces" option). It would build on `OpenMultiSeat.Sessions`' `SessionManager`, which is what actually brings up each seat's Windows session and launches its process (`ProcessLauncher`, using `CreateProcessAsUser`): the confirmation dialog would sit in front of that call, with a persisted "don't ask again" preference stored alongside the rest of `SeatConfiguration`. No such dialog, preference, or startup-mode setting exists in the GUI yet.
+**🚧 Partial** — a narrower, button-triggered version exists, not ASTER's automatic boot-time prompt.
+
+The [Settings page](general-settings-tab.md)'s new **"Start Workplaces Now"** button (the manual-start path of the new Workplace Start Mode setting) shows a real Yes/No `MessageBox` — "Start all configured workplaces now? ... seats set to 'Display login dialog' are skipped" — before calling `SeatStartupOrchestrator.StartAllSeatsAsync`. That's the same "confirm, then actually start sessions" shape ASTER's dialog has, and it does gate a real action (Explorer launched as each eligible seat's Windows account via `SessionManager.LaunchProcessWithCredentialsAsync`), so it's no longer a pure placeholder.
+
+What's still missing relative to ASTER's own version:
+
+- **It's manual-trigger only.** ASTER shows this prompt *automatically at PC power-on* specifically when Manual mode is selected. OpenMultiSeat's Manual mode registers no Scheduled Task at all — nothing runs automatically under Manual mode, so there's no boot-time moment to show a prompt from. (The two *automatic* modes — At System Startup / At First Login — skip any prompt and just try to start seats directly, matching ASTER's own automatic-mode behavior of not asking.)
+- **No "do not ask this question again" checkbox** or persisted preference for it — every manual start re-prompts.
+
+Building the ASTER-equivalent boot-time prompt for real would need an interactive-session component triggered at logon (not the headless `--start-seats` scheduled task, which by design has no UI to prompt from) that shows this same confirm dialog before calling into the orchestrator, plus a persisted "don't ask again" flag.
