@@ -8,6 +8,13 @@ namespace OpenMultiSeat.GUI;
 
 public partial class App : Application
 {
+    /// <summary>Set by Program.Main from "--apply-start-mode=&lt;mode&gt;" when this process was
+    /// launched by SettingsPage.TryRelaunchElevated to carry a just-chosen Workplace Start Mode
+    /// across a UAC relaunch. MainWindow's constructor reads and clears this once, right after
+    /// construction — never read again afterward, so a later normal launch never picks up a stale
+    /// value some other way.</summary>
+    public static SeatStartMode? PendingApplyStartMode { get; set; }
+
     /// <summary>
     /// Body of the "--start-seats" headless entry point (see <see cref="Program"/> for why this
     /// runs from a hand-written Main rather than an OnStartup override).

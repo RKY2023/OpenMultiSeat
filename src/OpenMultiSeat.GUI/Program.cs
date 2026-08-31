@@ -1,3 +1,5 @@
+using OpenMultiSeat.Core;
+
 namespace OpenMultiSeat.GUI;
 
 /// <summary>
@@ -12,6 +14,12 @@ internal static class Program
 {
     private const string StartSeatsArg = "--start-seats";
 
+    /// <summary>Carries a Workplace Start Mode chosen just before an elevated UAC relaunch (see
+    /// SettingsPage.TryRelaunchElevated) across to this new elevated process, so MainWindow can
+    /// apply it automatically instead of asking the user to pick it again now that they're
+    /// elevated. Not "--start-seats": this instance still shows the normal GUI.</summary>
+    private const string ApplyStartModeArgPrefix = "--apply-start-mode=";
+
     [STAThread]
     private static int Main(string[] args)
     {
@@ -19,6 +27,13 @@ internal static class Program
         {
             App.RunHeadlessStartupAsync().GetAwaiter().GetResult();
             return 0;
+        }
+
+        var applyModeArg = args.FirstOrDefault(a => a.StartsWith(ApplyStartModeArgPrefix, StringComparison.Ordinal));
+        if (applyModeArg != null &&
+            Enum.TryParse<SeatStartMode>(applyModeArg[ApplyStartModeArgPrefix.Length..], out var pendingMode))
+        {
+            App.PendingApplyStartMode = pendingMode;
         }
 
         var app = new App();

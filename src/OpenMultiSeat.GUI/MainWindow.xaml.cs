@@ -12,6 +12,20 @@ public partial class MainWindow : Window
         InitializeComponent();
         _navButtons = [DashboardBtn, DevicesBtn, SeatsBtn, SystemBtn, DisplaysBtn, InputBtn, AudioBtn, SettingsBtn, AboutBtn];
         LoadDashboard();
+
+        // This process was launched elevated specifically to apply a Workplace Start Mode chosen
+        // just before the UAC relaunch (see SettingsPage.TryRelaunchElevated) — open straight to
+        // Settings and apply it there, instead of leaving the user to make the same choice twice.
+        if (App.PendingApplyStartMode is { } pendingMode)
+        {
+            App.PendingApplyStartMode = null;
+
+            var settingsPage = new Pages.SettingsPage();
+            settingsPage.ApplyPendingStartModeOnLoad(pendingMode);
+            ContentFrame.Navigate(settingsPage);
+            StatusText.Text = "Settings - Application preferences";
+            SetActiveNav(SettingsBtn);
+        }
     }
 
     private void SetActiveNav(Button active)

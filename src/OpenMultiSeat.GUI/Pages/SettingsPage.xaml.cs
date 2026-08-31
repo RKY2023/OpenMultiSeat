@@ -1,3 +1,5 @@
+using System.ComponentModel;
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using Microsoft.Extensions.Logging;
@@ -16,6 +18,13 @@ namespace OpenMultiSeat.GUI.Pages;
 /// former no-op "Configure Settings" stub outright — see
 /// docs/control-panel/general-settings-tab.md for what's real vs. still limited (notably the
 /// DPAPI LocalMachine-scope trade-off At System Startup relies on).
+///
+/// Changing Workplace Start Mode always needs OpenMultiSeat running elevated (see
+/// WindowsStartupTriggerManager). Rather than dead-ending on "run as Administrator yourself and
+/// try again," picking a mode while not elevated offers to relaunch the whole app elevated via
+/// UAC with "--apply-start-mode=&lt;mode&gt;" on the command line (see Program.Main / App.PendingApplyStartMode /
+/// MainWindow's constructor) so the choice the user just made is carried across the relaunch and
+/// applied automatically, instead of asking them to make the same selection twice.
 /// </summary>
 public partial class SettingsPage : Page
 {
@@ -31,6 +40,16 @@ public partial class SettingsPage : Page
         _seatPersistence = new SeatPersistence(GuiLoggerFactory.Instance.CreateLogger<SeatPersistence>());
         _startupTriggerManager = new WindowsStartupTriggerManager(GuiLoggerFactory.Instance.CreateLogger<WindowsStartupTriggerManager>());
         Loaded += async (_, _) => await LoadStartModeAsync();
+    }
+
+    /// <summary>Called by MainWindow right after navigating here, when this instance was launched
+    /// specifically to apply a start mode chosen before an elevated relaunch (see the class doc
+    /// comment). Runs after Loaded's own LoadStartModeAsync so the combo box reflects the
+    /// (pre-relaunch) persisted mode first, then immediately applies the pending one — now while
+    /// actually elevated, so it goes through instead of bouncing back to the same dead end.</summary>
+    public void ApplyPendingStartModeOnLoad(SeatStartMode mode)
+    {
+        Loaded += async (_, _) => await ApplyStartModeAsync(mode, alreadyElevated: true);
     }
 
     private async Task LoadStartModeAsync()
@@ -76,7 +95,16 @@ public partial class SettingsPage : Page
             return;
 
         var mode = Enum.Parse<SeatStartMode>(tag);
+        await ApplyStartModeAsync(mode, alreadyElevated: false);
+    }
 
+    /// <summary>Shared by the combo box's own change handler and by the post-elevated-relaunch
+    /// path (<see cref="ApplyPendingStartModeOnLoad"/>). <paramref name="alreadyElevated"/> skips
+    /// the up-front elevation check/offer-to-relaunch entirely — set true only when this call is
+    /// itself already running as the result of that relaunch, so a second (impossible: already
+    /// elevated) relaunch prompt can never loop.</summary>
+    private async Task ApplyStartModeAsync(SeatStartMode mode, bool alreadyElevated)
+    {
         Seat? triggerSeat = null;
         if (mode == SeatStartMode.AtFirstLogin)
         {
@@ -93,6 +121,26 @@ public partial class SettingsPage : Page
             }
         }
 
+        // Changing this setting always needs to be elevated — even switching back to Manual has
+        // to delete whichever task is currently registered (see WindowsStartupTriggerManager).
+        // Rather than let that call fail and dead-end on "now go run this as Administrator
+        // yourself," offer to do it: relaunch the whole app elevated via UAC with the mode the
+        // user just chose carried on the command line, so it's applied automatically once the
+        // elevated instance comes up — no need to make the same selection twice.
+        if (!alreadyElevated && !ElevationHelper.IsRunningElevated())
+        {
+            var relaunch = MessageBox.Show(
+                "Changing the Workplace Start Mode needs OpenMultiSeat to be running as Administrator " +
+                "(it registers/removes a Windows Scheduled Task, even when switching back to Manual).\n\n" +
+                "Restart OpenMultiSeat as Administrator now and apply this choice automatically?",
+                "Workplace Start Mode", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+            if (relaunch != MessageBoxResult.Yes || !TryRelaunchElevated(mode))
+                await LoadStartModeAsync();
+
+            return;
+        }
+
         StartModeComboBox.IsEnabled = false;
         try
         {
@@ -100,8 +148,7 @@ public partial class SettingsPage : Page
             if (!result.Success)
             {
                 MessageBox.Show(
-                    $"Couldn't apply this start mode: {result.Error}\n\n" +
-                    "Registering a scheduled task needs OpenMultiSeat to be running elevated (as Administrator).",
+                    $"Couldn't apply this start mode: {result.Error}",
                     "Workplace Start Mode", MessageBoxButton.OK, MessageBoxImage.Error);
                 await LoadStartModeAsync();
                 return;
@@ -114,6 +161,44 @@ public partial class SettingsPage : Page
         {
             StartModeComboBox.IsEnabled = true;
         }
+    }
+
+    /// <summary>Relaunches this same executable elevated (UAC prompt) with
+    /// "--apply-start-mode=&lt;mode&gt;" on the command line, then shuts down this (non-elevated)
+    /// instance. Returns false — leaving this instance running, combo box reverted by the caller
+    /// — if the user declines/cancels the UAC prompt (Win32Exception 1223, ERROR_CANCELLED) or the
+    /// relaunch otherwise fails to start.</summary>
+    private bool TryRelaunchElevated(SeatStartMode mode)
+    {
+        var exePath = Environment.ProcessPath;
+        if (string.IsNullOrEmpty(exePath))
+        {
+            MessageBox.Show("Couldn't resolve the current executable's path to relaunch it.",
+                "Workplace Start Mode", MessageBoxButton.OK, MessageBoxImage.Error);
+            return false;
+        }
+
+        try
+        {
+            Process.Start(new ProcessStartInfo(exePath, $"--apply-start-mode={mode}")
+            {
+                UseShellExecute = true,
+                Verb = "runas"
+            });
+        }
+        catch (Win32Exception ex) when (ex.NativeErrorCode == 1223) // ERROR_CANCELLED — user clicked "No" on the UAC prompt
+        {
+            return false;
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Couldn't restart elevated: {ex.Message}",
+                "Workplace Start Mode", MessageBoxButton.OK, MessageBoxImage.Error);
+            return false;
+        }
+
+        Application.Current.Shutdown();
+        return true;
     }
 
     /// <summary>Real manual-start action, with a confirm prompt standing in for ASTER's

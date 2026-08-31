@@ -30,9 +30,15 @@ public interface IStartupTriggerManager
 /// same executable with "--start-seats" (see App.xaml.cs), which runs headless and calls
 /// <see cref="SeatStartupOrchestrator"/>.
 ///
-/// Registering an ONSTART/SYSTEM task requires the caller to be running elevated; a non-elevated
-/// caller gets a failed <see cref="StartupTriggerResult"/> back with schtasks' own error text,
-/// not a silent no-op.
+/// Registering an ONSTART/SYSTEM task requires the caller to be running elevated. This is now
+/// checked up front (<see cref="ElevationHelper"/>) rather than left to schtasks.exe to discover:
+/// switching *back* to Manual, or between the two automatic modes, also has to delete whichever
+/// task is currently registered, and a delete that fails silently (see the comment on
+/// <see cref="DeleteTaskAsync"/>) used to let that failure through unnoticed — the setting would
+/// flip to "Manual" in settings.json while the old SYSTEM-owned task kept running at the next
+/// boot. Checking elevation before touching schtasks at all avoids that: either every change this
+/// call needs to make can actually go through, or none of them are attempted and the caller is
+/// told why.
 /// </summary>
 public class WindowsStartupTriggerManager : IStartupTriggerManager
 {
@@ -48,6 +54,13 @@ public class WindowsStartupTriggerManager : IStartupTriggerManager
 
     public async Task<StartupTriggerResult> ApplyAsync(SeatStartMode mode, Seat? triggerSeat)
     {
+        if (!ElevationHelper.IsRunningElevated())
+        {
+            return StartupTriggerResult.Failed(
+                "OpenMultiSeat needs to be running as Administrator to change the Workplace Start Mode " +
+                "(this deletes/registers a Windows Scheduled Task either way, even when switching back to Manual).");
+        }
+
         // Clear both first, unconditionally, so switching to any mode (including Manual) always
         // starts from a clean slate rather than layering a new task on top of a stale one.
         await DeleteTaskAsync(AtSystemStartupTaskName);
