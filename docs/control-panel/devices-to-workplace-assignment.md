@@ -8,15 +8,17 @@ The "Devices to Workplace(s) Assignment" window, opened via "Workplace appointme
 
 ## OpenMultiSeat status
 
-🚧 **Stub** — placeholder only today. See [Known Issues](../known-issues.md).
+🚧 **Partially implemented.**
 
-This is the core missing piece of OpenMultiSeat's **Seats** page. The page currently shows only a heading, a one-line description, and a single "Configure Seats" button that pops a generic `MessageBox.Show(...)` info dialog with no real bound controls — even though the underlying device enumeration is fully working on the Devices page.
+The Devices page has a working **"Assign to Seat…"** action (select a device row → pick a seat and a Keyboard/Mouse type → Assign), plus **Unassign**, both bound to `ISeatManager.AssignDeviceToSeatAsync`/`UnassignDeviceFromSeatAsync`. An "Assigned To" column on the same grid shows current assignment, computed by cross-referencing each `Seat`'s `KeyboardIds`/`MouseIds` (there's no dedicated "which seat owns this device" query on `ISeatManager`, so the GUI builds that lookup itself from the seat list).
 
-A real implementation would need:
+Camera/USB/Bluetooth devices (from `GeneralDeviceEnumerator`) are assignable too now, via a separate `ISeatManager.AssignOtherDeviceToSeatAsync`/`UnassignOtherDeviceFromSeatAsync` pair and a new `Seat.OtherDeviceIds` list — the Devices page routes "Assign to Seat…" to a dedicated `AssignOtherDeviceToSeatWindow` for these device classes instead of the Keyboard/Mouse dialog. This is stated plainly in that dialog's own text: it's an **ownership record only**. Unlike keyboard/mouse assignment (which `InputIsolationService` actually acts on) or display/audio assignment (which real subsystems route), there's no isolation mechanism that restricts a camera or USB hub to one seat's session — assigning one here just records "this seat owns this device" for inventory/organizational purposes, the same exclusivity guarantee (rejects assigning an already-assigned device to a second seat) but no functional effect yet.
 
-- A context-menu action ("Assign to seat") on rows in the Devices grid, or an equivalent control on the Seats page.
-- Per-seat checkboxes reflecting the `Seat` list from `SeatConfiguration`, allowing a device to be enabled for one, several, or all seats.
-- A shared/exclusive toggle equivalent to ASTER's "To All" / "To None" shortcuts.
-- Persistence through `IDevicePersistence` (implemented by `OpenMultiSeat.Devices.DevicePersistence`), which already stores device records (`DeviceRecord`) and would need a seat-assignment field wired to this UI.
+What's different from ASTER's version of this window:
 
-![Seats page stub](../images/screenshots/seats-page-stub.png)
+- **Exclusive-only, no "To All" shared mode.** `SeatManager`'s assignment model is exclusive by design — a device already assigned to one seat is rejected if you try to assign it to another, with no equivalent of ASTER's "To All" (share this device across every workplace simultaneously). Building that would mean changing the underlying `Seat.KeyboardIds`/`MouseIds` model, not just the GUI.
+- **Reassignment now confirms and moves in one action** — picking a different seat for an already-assigned device shows a before/after confirm (current seat → new seat) via `ConfirmDeviceDestinationWindow`, then unassigns and reassigns on confirmation, matching ASTER's separate [Confirm Device Destination](confirm-device-destination.md) window conceptually. Still no drag-and-drop (it's the existing "Assign to Seat…" dropdown flow) and still two `ISeatManager` calls under the hood, not one atomic move.
+- **No "Indicate device" / "Set custom icon" / per-device "Info".** Only the assignment action itself is built.
+- Still direct-persistence, not IPC (see [Known Issues](../known-issues.md)) — same caveat as every other real page today.
+
+The Devices page also now lists cameras, general USB controllers/hubs, and Bluetooth devices/radios (via a WMI `Win32_PnPEntity` scan, `GeneralDeviceEnumerator`) alongside the keyboard/mouse devices Raw Input reports — real visibility into what's connected, matching what ASTER's device list would show, and (as above) these are now assignable as ownership records.

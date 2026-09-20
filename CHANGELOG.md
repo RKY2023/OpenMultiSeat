@@ -7,22 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+> Current build details, artifact locations, and verification status live in
+> [RELEASE_NOTES.md](RELEASE_NOTES.md).
+
 ### Added
 - Phase 0: Hardware Discovery POC
   - Input device enumeration (keyboard/mouse) via Raw Input API
   - Display enumeration with resolution/refresh/position via Display Configuration API
   - Windows session enumeration via WTS API
   - Phase0.Poc console application for testing
+- Admin GUI (Phase 7): every page wired to a real backend — Devices, Seats, Displays,
+  Audio, System, Input Isolation, Settings, Assign CPU Cores
+- ASTER-style Tile Layout window with drag-and-drop reassignment and per-type
+  "Indicate device" (raw-input blink, on-monitor overlay, live audio meter, camera preview)
+- Workplace Start Mode (Manual / At System Startup / Via Workplace 1), backed by real
+  Windows Scheduled Tasks, plus a manual "Start Workplaces Now" action
+- MSI installer (Phase 8): `installer/Product.wxs`, built with WiX Toolset v5 —
+  per-machine install, Start Menu and Desktop shortcuts, upgrade support
+- Modern UI theme across the whole admin console
 
 ### In Development
-- Phase 1: Device Discovery (Stable IDs, VID/PID, serial numbers)
-- Phase 2: Seat Configuration (Data model, validation, persistence)
-- Phase 3: Session Management (Lifecycle, process launching)
-- Phase 4: Display Management (Assignment, topology)
-- Phase 5: Input Isolation (Critical: keyboard/mouse routing)
-- Phase 6: Audio (Device routing)
-- Phase 7: Admin GUI (WPF console)
-- Phase 8: Installer (MSI package)
+- Phase 3: Session Management — process launching works (`CreateProcessWithLogonW`),
+  but genuinely isolated per-seat desktop sessions do not (see Known Issues)
+- Phase 5: Input Isolation — GUI and service wiring exist; real enforcement unconfirmed
 - Phase 9: Reliability (Recovery, robustness)
 
 ## [0.1.0-alpha] - 2026-08-14
@@ -107,11 +114,19 @@ Example: `feat: Phase 0 hardware discovery implementation`
 
 ## Known Issues
 
-- Input isolation not yet implemented (Phase 5)
-- Display routing not yet implemented (Phase 4)
-- Audio not yet enumerated (Phase 6)
-- GUI not yet implemented (Phase 7)
-- No kernel driver signing (Phase 8)
+See [docs/known-issues.md](docs/known-issues.md) for the detailed, per-feature status.
+The headline items:
+
+- **No true multi-seat sessions yet.** Seats are launched with `CreateProcessWithLogonW`
+  ("run as a different user"), which does *not* create a hardware-isolated desktop session
+  bound to a specific seat's monitor/keyboard/mouse. Real simultaneous multi-seat login
+  needs RDS/MultiPoint-style session support or a Winlogon credential provider — neither exists here.
+- Input isolation is wired end-to-end in the GUI, but real enforcement is unconfirmed (Phase 5)
+- Keyboard/mouse "Indicate device" is still unconfirmed after three rounds of fixes;
+  a live diagnostic now reports which stage fails
+- Nothing is code-signed — neither the exe nor the MSI, and no kernel drivers exist
+- No GUI page talks to the Service over IPC; pages use the persistence layer directly
+- Displays have no persistence layer
 
 ## Contributing
 

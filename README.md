@@ -8,10 +8,17 @@ Open-source Windows multi-seat system — run two or more independent local work
 
 ## Project Status
 
-**Phase:** Bootstrap (Scaffolding & Architecture)  
-**Current Milestone:** Project structure and design documentation setup
+**Phase:** Admin console built out; core session isolation still open  
+**Current Milestone:** Every GUI page wired to a real backend; MSI installer shipping
 
-See [DESIGN.md](./DESIGN.md) for the complete technical specification.
+The WPF admin console is real and usable — device/display/audio enumeration and
+per-seat assignment, an ASTER-style tile layout with drag-and-drop, CPU-core affinity,
+and Workplace Start Mode backed by Windows Scheduled Tasks. What's **not** solved is the
+hardest part: launching a genuinely hardware-isolated desktop session per seat.
+
+- [RELEASE_NOTES.md](./RELEASE_NOTES.md) — current build, artifacts, install steps, verification status
+- [docs/known-issues.md](./docs/known-issues.md) — honest per-feature status
+- [DESIGN.md](./DESIGN.md) — complete technical specification
 
 ## Quick Start
 
@@ -24,14 +31,23 @@ See [DESIGN.md](./DESIGN.md) for the complete technical specification.
 ### Building
 
 ```bash
-dotnet build OpenMultiSeat.sln
+dotnet build src\OpenMultiSeat.GUI\OpenMultiSeat.GUI.csproj -c Release
 ```
 
 ### Running Tests
 
 ```bash
-dotnet test OpenMultiSeat.sln
+dotnet test tests\OpenMultiSeat.Tests\OpenMultiSeat.Tests.csproj -c Release
 ```
+
+> A whole-solution `dotnet build OpenMultiSeat.sln` currently fails in
+> `scripts\Phase0.Poc.csproj` (stale missing runtime asset in its own `bin\`), unrelated to
+> the GUI or the tests — build those two projects directly, as above.
+
+### Packaging
+
+See [RELEASE_NOTES.md](./RELEASE_NOTES.md) for the exact `dotnet publish` and
+`wix build` commands that produce the standalone exe and the MSI installer.
 
 ## Architecture
 

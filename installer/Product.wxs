@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Installer for the OpenMultiSeat admin console (OpenMultiSeat.GUI.exe).
+
+  The payload is the single self-contained, single-file publish output
+  (dotnet publish ... -p:PublishSingleFile=true) — there's exactly one file
+  to install, no dependent DLLs, no runtime to redistribute separately.
+
+  Installs per-machine (Scope="perMachine") under Program Files, since this
+  is admin/kiosk-configuration software meant to be set up once for a shared
+  PC, not a per-user tool — the same reasoning "Workplace Start Mode"
+  already needs Administrator for (see WindowsStartupTriggerManager /
+  docs/known-issues.md's "round five" entry). A per-machine MSI install
+  itself also requires elevation; Windows Installer prompts for that (UAC)
+  the same way the app's own "restart elevated" flow does.
+
+  Build (from the repo root, after publishing the single-file exe to
+  publish\OpenMultiSeat.GUI\OpenMultiSeat.GUI.exe):
+
+      wix extension add WixToolset.UI.wixext
+      wix build installer\Product.wxs -ext WixToolset.UI.wixext -arch x64 ^
+          -d SourceDir=publish\OpenMultiSeat.GUI ^
+          -o publish\OpenMultiSeat-Setup.msi
+
+  UpgradeCode is fixed and must never change across releases — it's what
+  lets a future MSI recognize "this is an upgrade of the same product" and
+  remove the old version automatically (MajorUpgrade below) instead of
+  installing side-by-side.
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+
+  <Package Name="OpenMultiSeat"
+           Manufacturer="OpenMultiSeat Contributors"
+           Version="1.0.0"
+           UpgradeCode="6b382a7b-c748-48a9-b36e-6b91f45c0e65"
+           Scope="perMachine"
+           Compressed="yes"
+           InstallerVersion="500">
+
+    <SummaryInformation Description="OpenMultiSeat Admin Console Setup" Manufacturer="OpenMultiSeat Contributors" />
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of OpenMultiSeat is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="OpenMultiSeat" />
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="ApplicationProgramsFolder" Name="OpenMultiSeat" />
+    </StandardDirectory>
+
+    <Feature Id="MainFeature" Title="OpenMultiSeat Admin Console" Level="1">
+      <ComponentRef Id="MainExecutable" />
+      <ComponentRef Id="StartMenuShortcut" />
+      <ComponentRef Id="DesktopShortcut" />
+    </Feature>
+
+    <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALLFOLDER" />
+    <WixVariable Id="WixUILicenseRtf" Value="License.rtf" />
+  </Package>
+
+  <Fragment>
+    <DirectoryRef Id="INSTALLFOLDER">
+      <Component Id="MainExecutable" Guid="6f2d6f0f-6e9c-4a1e-9d2a-2f6b5b6c6a11" Bitness="always64">
+        <File Id="OpenMultiSeatExe" Source="$(var.SourceDir)\OpenMultiSeat.GUI.exe" KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+
+    <DirectoryRef Id="ApplicationProgramsFolder">
+      <Component Id="StartMenuShortcut" Guid="8a3f9e2b-1c4d-4f7a-9b0e-5d6c7a8b9c01" Bitness="always64">
+        <Shortcut Id="StartMenuShortcutFile"
+                  Name="OpenMultiSeat"
+                  Description="OpenMultiSeat Admin Console"
+                  Target="[INSTALLFOLDER]OpenMultiSeat.GUI.exe"
+                  WorkingDirectory="INSTALLFOLDER" />
+        <RemoveFolder Id="RemoveApplicationProgramsFolder" On="uninstall" />
+        <RegistryValue Root="HKLM" Key="Software\OpenMultiSeat" Name="StartMenuShortcutInstalled" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+
+    <StandardDirectory Id="DesktopFolder">
+      <Component Id="DesktopShortcut" Guid="2e4b6a1d-3f5c-4e8a-8b1d-9c0a1b2c3d02" Bitness="always64">
+        <Shortcut Id="DesktopShortcutFile"
+                  Name="OpenMultiSeat"
+                  Description="OpenMultiSeat Admin Console"
+                  Target="[INSTALLFOLDER]OpenMultiSeat.GUI.exe"
+                  WorkingDirectory="INSTALLFOLDER" />
+        <RegistryValue Root="HKLM" Key="Software\OpenMultiSeat" Name="DesktopShortcutInstalled" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </StandardDirectory>
+  </Fragment>
+</Wix>

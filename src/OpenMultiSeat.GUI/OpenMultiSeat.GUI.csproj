@@ -10,6 +10,21 @@
     <OutputType>WinExe</OutputType>
   </PropertyGroup>
 
+  <!--
+    App.xaml would otherwise auto-generate its own Main() (as an ApplicationDefinition item) that
+    constructs App and calls Run() with no way to intercept before the WPF Dispatcher starts.
+    Program.cs needs to run its headless start-seats mode and exit before that happens (see its
+    doc comment), so App.xaml is downgraded to a plain Page here — InitializeComponent() still
+    gets generated from it, just not a competing Main.
+  -->
+  <ItemGroup>
+    <ApplicationDefinition Remove="App.xaml" />
+    <Page Include="App.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="../OpenMultiSeat.Core/OpenMultiSeat.Core.csproj" />
     <ProjectReference Include="../OpenMultiSeat.Devices/OpenMultiSeat.Devices.csproj" />
@@ -24,6 +39,14 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.0" />
+    <PackageReference Include="System.Management" Version="9.0.0" />
+    <!-- Live camera preview for the Tile Layout window's "Indicate device" on Camera tiles.
+         AForge.Video.DirectShow: a thin, purpose-built DirectShow wrapper (enumerate video input
+         devices, get a NewFrame event per captured frame), chosen over WinRT's MediaCapture /
+         CaptureElement, which would require retargeting this project to a windows10.0.xxxxx TFM;
+         AForge works directly on plain net9.0-windows. -->
+    <PackageReference Include="AForge.Video.DirectShow" Version="2.2.5" />
+    <PackageReference Include="System.Drawing.Common" Version="9.0.0" />
   </ItemGroup>
 
 </Project>

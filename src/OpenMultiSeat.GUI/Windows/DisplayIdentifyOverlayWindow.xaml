@@ -1,0 +1,13 @@
+<Window x:Class="OpenMultiSeat.GUI.Windows.DisplayIdentifyOverlayWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    WindowStyle="None" AllowsTransparency="True" Background="#B0000000"
+    ShowInTaskbar="False" Topmost="True" ResizeMode="NoResize"
+    WindowStartupLocation="Manual">
+    <Grid>
+        <TextBlock x:Name="LabelText" HorizontalAlignment="Center" VerticalAlignment="Center"
+                   FontSize="120" FontWeight="Bold" Foreground="White"/>
+        <TextBlock x:Name="SubLabelText" HorizontalAlignment="Center" VerticalAlignment="Center"
+                   Margin="0,180,0,0" FontSize="22" Foreground="#CCCCCC"/>
+    </Grid>
+</Window>

@@ -8,16 +8,16 @@ The "Workplace Tab Settings" window configures how workplaces and their connecte
 
 ## OpenMultiSeat status
 
-🚧 **Stub** — placeholder only today. See [Known Issues](../known-issues.md).
+🚧 **Partially implemented** — the two options with a real equivalent are wired up. Icon size and tile distribution still have nothing to control: there is now a real tile layout ([Tile Layout window](workplaces-tab.md), opened from the Seats page), but its columns are a fixed width sized to the seat count, not a resizable canvas with icons that could be made bigger/smaller or redistributed.
 
-This is part of the **Seats** page, which today is only a heading, a one-line description, and a "Configure Seats" button wired to a generic `MessageBox.Show(...)` dialog — there is no seat-tile layout, device iconography, or view-settings UI yet.
+A new **"View Settings…"** button on the Seats page opens `WorkplaceTabSettingsWindow`, backed by a real `WorkplaceViewSettings` record (`%AppData%\OpenMultiSeat\view-settings.json`, via `WorkplaceViewSettingsPersistence`):
 
-A real implementation would need:
+- **"Show displays not linked to any seat"** (checkbox, default on) — maps directly to ASTER's "show unlinked displays" toggle. When off, the Displays page hides displays with no seat assignment from its grid, and the status line reports how many were hidden.
+- **Highlight newly detected devices, 2–20 seconds** (slider, default 5) — maps to ASTER's highlight-duration slider. The Devices page highlights (light-yellow row background) any device whose `DeviceRecord.FirstSeen` timestamp falls within that many seconds of "now," recomputed every time the grid loads or is refreshed. This isn't a live, self-expiring highlight the way ASTER's is (no timer ticks it away while you watch — it just won't be highlighted the *next* time you load or refresh after the window passes) since the Devices page only updates on Scan/Refresh, not a live device-added feed; the actual *value* being highlighted (a genuinely-recently-registered device, via the real `FirstSeen` timestamp `DevicePersistence` already sets on first registration) is real, though.
 
-- A visual seat/workplace layout view (tiles or cards, one per `Seat`) as the foundation these settings would customize.
-- A settings panel or flyout with toggles for showing unlinked displays and shared devices, an icon-size control, and a layout-distribution toggle.
-- A duration slider for "newly detected device" highlighting, tied to device-added notifications coming from `OpenMultiSeat.Devices.HidDeviceEnumerator` over the IPC channel (`OpenMultiSeat.IPC`) from the Service to the GUI.
+What has **no equivalent** here, and why:
 
-None of this UI exists today; it depends on the Seats page first getting a real bound layout (see [Devices to Workplace(s) Assignment](devices-to-workplace-assignment.md) for the underlying assignment model).
+- **"Show devices shared across workplaces."** OpenMultiSeat's assignment model is exclusive-only (see [Devices to Workplace(s) Assignment](devices-to-workplace-assignment.md)) — there's no "shared across workplaces" concept to toggle visibility of yet.
+- **Device icon size, "distribute workplace tiles evenly."** The Seats page is a `DataGrid` (rows and columns), not a tile/card layout with device icons — there's nothing for either setting to resize or redistribute. Building these for real would mean building the tile layout first.
 
-![Seats page stub](../images/screenshots/seats-page-stub.png)
+See [Known Issues](../known-issues.md) for where the code lives.

@@ -3,10 +3,34 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Title="Audio">
     <Grid Margin="20">
-        <StackPanel>
-            <TextBlock Text="Audio" FontSize="20" FontWeight="Bold" Margin="0,0,0,20"/>
-            <TextBlock Text="Configuration page for Audio" FontSize="12" Foreground="#666666"/>
-            <Button Content="Configure Audio" Click="OnConfigure" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,10,0,0"/>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="Audio" FontSize="20" FontWeight="Bold" Margin="0,0,0,10"/>
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,15">
+            <Button Content="Scan Audio Devices" Click="OnScanDevices" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,0,10,0"/>
+            <Button Content="Assign to Seat..." Click="OnAssignToSeat" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,0,10,0"/>
+            <Button Content="Unassign" Click="OnUnassign" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,0,10,0"/>
+            <TextBlock x:Name="StatusText" VerticalAlignment="Center" Foreground="#666666" FontSize="12"/>
         </StackPanel>
+
+        <Grid Grid.Row="2">
+            <TextBlock x:Name="EmptyStateText" Text="No audio devices detected yet. Click &quot;Scan Audio Devices&quot;."
+                       Foreground="#888888" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center"
+                       Visibility="Collapsed"/>
+            <DataGrid x:Name="AudioGrid" AutoGenerateColumns="False" IsReadOnly="True"
+                      SelectionMode="Single" Background="White" BorderBrush="#CCCCCC">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Device" Binding="{Binding FriendlyName}" Width="260"/>
+                    <DataGridTextColumn Header="Type" Binding="{Binding Type}" Width="90"/>
+                    <DataGridCheckBoxColumn Header="Default" Binding="{Binding IsDefault, Mode=OneWay}" Width="70"/>
+                    <DataGridTextColumn Header="Assigned To" Binding="{Binding AssignedSeatDisplay}" Width="150"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Grid>
     </Grid>
 </Page>

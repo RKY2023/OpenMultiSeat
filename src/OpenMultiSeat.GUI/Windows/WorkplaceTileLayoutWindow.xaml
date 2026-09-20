@@ -1,0 +1,38 @@
+<Window x:Class="OpenMultiSeat.GUI.Windows.WorkplaceTileLayoutWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Tile Layout" Height="640" Width="1000" MinHeight="420" MinWidth="600"
+    Background="#141414" WindowStartupLocation="CenterOwner">
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="Tile Layout" FontSize="18" FontWeight="Bold" Foreground="White" Margin="0,0,0,5"/>
+        <TextBlock Grid.Row="1" Foreground="#888888" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,10"
+                   Text="Drag a device, display, or audio endpoint onto a different column to reassign it -- dragging it back onto &quot;System&quot; unassigns it. To identify a tile: press any physical key or move any physical mouse for Keyboards/Mice (while this window is open); right-click a Display tile for a big on-screen ID shown directly on that monitor; Audio tiles glow live on their own whenever that endpoint is actually carrying sound; right-click a Camera tile for a few seconds of its live video feed right on the tile; right-click any other Other-device tile for a plain in-app highlight (no live signal exists for USB/Bluetooth)."/>
+
+        <!-- Live raw-input diagnostic: what the last WM_INPUT event actually resolved to, so a
+             failure to blink a tile is diagnosable from the window itself instead of being a black
+             box. See WorkplaceTileLayoutWindow.xaml.cs's HandleRawInputAsync. -->
+        <Border Grid.Row="2" Background="#1E1E1E" BorderBrush="#3D3D3D" BorderThickness="1" CornerRadius="3"
+                Padding="8,5" Margin="0,0,0,10">
+            <TextBlock x:Name="RawInputDiagnosticText" Foreground="#FFD51A" FontSize="10" FontFamily="Consolas"
+                       TextWrapping="Wrap" Text="Raw input diagnostic: no keyboard/mouse event seen yet."/>
+        </Border>
+
+        <ScrollViewer x:Name="TileScrollViewer" Grid.Row="3" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+            <StackPanel x:Name="ColumnsPanel" Orientation="Horizontal"/>
+        </ScrollViewer>
+
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+            <TextBlock x:Name="StatusText" Foreground="#888888" FontSize="11" VerticalAlignment="Center" Margin="0,0,15,0"/>
+            <Button Content="Refresh" Click="OnRefresh" Background="#3D3D3D" Foreground="White" Padding="14,8" Margin="0,0,10,0"/>
+            <Button Content="Close" Click="OnClose" Background="#2D6CDF" Foreground="White" Padding="16,8"/>
+        </StackPanel>
+    </Grid>
+</Window>
