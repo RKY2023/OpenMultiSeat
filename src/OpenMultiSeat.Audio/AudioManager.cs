@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using NAudio.CoreAudioApi;
 using OpenMultiSeat.Core;
 
 namespace OpenMultiSeat.Audio;
@@ -15,6 +16,20 @@ public interface IAudioManager
     Task<bool> IsAudioRoutingEnabledAsync();
     Task<bool> EnableAudioRoutingAsync();
     Task<bool> DisableAudioRoutingAsync();
+
+    /// <summary>
+    /// Real-time peak level (0.0-1.0) for the audio endpoint currently identified by
+    /// <paramref name="endpointId"/> (AudioDevice.EndpointId/DeviceId -- an NAudio/Core Audio
+    /// endpoint ID), via Windows' own per-endpoint audio meter -- the same mechanism the Windows
+    /// volume mixer's own level bars use. Used by the Tile Layout window's "Indicate device" for
+    /// audio tiles: unlike a keyboard/mouse (identifiable by pressing it) or a display (identifiable
+    /// by an on-screen overlay), there's no way to make an arbitrary speaker/microphone "announce
+    /// itself" -- the closest real equivalent is showing which endpoint is *actually carrying
+    /// sound right now*, so an admin can play a test tone and watch for the live tile that lights
+    /// up. Returns 0 (not an exception) for a disconnected/removed endpoint or any other failure,
+    /// since a polling caller shouldn't have to handle a fluctuating hardware condition as an error.
+    /// </summary>
+    Task<float> GetPeakLevelAsync(string endpointId);
 }
 
 public class AudioTopology
@@ -276,6 +291,27 @@ public class AudioManager : IAudioManager
         _routingEnabled = false;
         _logger.LogInformation("✓ Audio routing disabled");
         return true;
+    }
+
+    public Task<float> GetPeakLevelAsync(string endpointId)
+    {
+        return Task.Run(() =>
+        {
+            try
+            {
+                using var enumerator = new MMDeviceEnumerator();
+                using var device = enumerator.GetDevice(endpointId);
+                return device.AudioMeterInformation.MasterPeakValue;
+            }
+            catch (Exception ex)
+            {
+                // Most commonly: the endpoint was unplugged/disabled since it was last enumerated.
+                // Not worth logging at Error/Warning -- a polling caller hits this constantly for
+                // any endpoint that's momentarily gone, and 0 is exactly the right answer either way.
+                _logger.LogDebug(ex, $"Couldn't read peak level for audio endpoint {endpointId}");
+                return 0f;
+            }
+        });
     }
 
     private async Task RefreshCacheAsync()

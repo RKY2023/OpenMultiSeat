@@ -1,0 +1,40 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+        Modern light palette. "Surface" = card/control backgrounds, "App" = the page canvas
+        behind them (kept a shade darker so cards read as raised without needing real shadows).
+        Kept close to the accent blue (#2D6CDF) already used by newer dialogs/windows so nothing
+        clashes with content that sets its own colors locally.
+    -->
+    <SolidColorBrush x:Key="Brush.Background.App" Color="#F4F5F8"/>
+    <SolidColorBrush x:Key="Brush.Surface" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="Brush.Surface.Alt" Color="#EEF0F4"/>
+    <SolidColorBrush x:Key="Brush.Border" Color="#E1E4EA"/>
+    <SolidColorBrush x:Key="Brush.Border.Strong" Color="#CCD0D9"/>
+
+    <SolidColorBrush x:Key="Brush.Text.Primary" Color="#1A1D23"/>
+    <SolidColorBrush x:Key="Brush.Text.Secondary" Color="#6B7078"/>
+    <SolidColorBrush x:Key="Brush.Text.Muted" Color="#9199A6"/>
+    <SolidColorBrush x:Key="Brush.Text.OnAccent" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="Brush.Text.OnDark" Color="#F4F5F8"/>
+    <SolidColorBrush x:Key="Brush.Text.OnDark.Muted" Color="#9BA3B4"/>
+
+    <SolidColorBrush x:Key="Brush.Accent" Color="#2D6CDF"/>
+    <SolidColorBrush x:Key="Brush.Accent.Hover" Color="#1E56C4"/>
+    <SolidColorBrush x:Key="Brush.Accent.Subtle" Color="#E7EFFD"/>
+
+    <SolidColorBrush x:Key="Brush.Success" Color="#1FA971"/>
+    <SolidColorBrush x:Key="Brush.Warning" Color="#E8A33D"/>
+    <SolidColorBrush x:Key="Brush.Danger" Color="#E5484D"/>
+
+    <!-- Dark rail used by the main-window sidebar/header only. -->
+    <SolidColorBrush x:Key="Brush.Rail.Bg" Color="#1B1E27"/>
+    <SolidColorBrush x:Key="Brush.Rail.BgAlt" Color="#20232D"/>
+    <SolidColorBrush x:Key="Brush.Rail.Hover" Color="#2A2E3A"/>
+    <SolidColorBrush x:Key="Brush.Rail.Border" Color="#2C2F3B"/>
+
+    <FontFamily x:Key="Font.Base">Segoe UI Variable Text, Segoe UI</FontFamily>
+    <FontFamily x:Key="Font.Display">Segoe UI Variable Display, Segoe UI Semibold, Segoe UI</FontFamily>
+
+</ResourceDictionary>
