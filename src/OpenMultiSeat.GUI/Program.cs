@@ -38,6 +38,7 @@ internal static class Program
 
         var app = new App();
         app.InitializeComponent();
+        app.DispatcherUnhandledException += App.OnDispatcherUnhandledException;
         return app.Run();
     }
 }

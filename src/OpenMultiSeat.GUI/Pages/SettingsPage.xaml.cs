@@ -47,9 +47,25 @@ public partial class SettingsPage : Page
     /// comment). Runs after Loaded's own LoadStartModeAsync so the combo box reflects the
     /// (pre-relaunch) persisted mode first, then immediately applies the pending one — now while
     /// actually elevated, so it goes through instead of bouncing back to the same dead end.</summary>
+    /// <remarks>
+    /// Re-syncs the dropdown from settings.json afterwards. ApplyStartModeAsync only updates the
+    /// status text on success, because in the normal path the user's own dropdown selection is
+    /// what triggered it. Here nothing touched the dropdown, so without the re-sync it kept showing
+    /// the pre-relaunch mode while the status text described the new one.
+    /// The handler also detaches itself so the apply can only ever run once per relaunch, even if
+    /// Loaded is raised again for this page. That's defensive: live testing showed a single run
+    /// with the previous plain "Loaded += ..." too.
+    /// </remarks>
     public void ApplyPendingStartModeOnLoad(SeatStartMode mode)
     {
-        Loaded += async (_, _) => await ApplyStartModeAsync(mode, alreadyElevated: true);
+        RoutedEventHandler? handler = null;
+        handler = async (_, _) =>
+        {
+            Loaded -= handler;
+            await ApplyStartModeAsync(mode, alreadyElevated: true);
+            await LoadStartModeAsync();
+        };
+        Loaded += handler;
     }
 
     private async Task LoadStartModeAsync()

@@ -7,6 +7,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <PlatformTarget>x64</PlatformTarget>
     <IsTestProject>true</IsTestProject>
+    <!-- Needed only so NativeInteropEntryPointTests can load the GUI assembly's types
+         (RawInputInterop and friends) to check their P/Invoke declarations. -->
+    <UseWPF>true</UseWPF>
   </PropertyGroup>
 
   <ItemGroup>
@@ -18,6 +21,9 @@
   <ItemGroup>
     <ProjectReference Include="../../src/OpenMultiSeat.Core/OpenMultiSeat.Core.csproj" />
     <ProjectReference Include="../../src/OpenMultiSeat.Sessions/OpenMultiSeat.Sessions.csproj" />
+    <ProjectReference Include="../../src/OpenMultiSeat.Devices/OpenMultiSeat.Devices.csproj" />
+    <ProjectReference Include="../../src/OpenMultiSeat.Displays/OpenMultiSeat.Displays.csproj" />
+    <ProjectReference Include="../../src/OpenMultiSeat.GUI/OpenMultiSeat.GUI.csproj" />
   </ItemGroup>
 
 </Project>

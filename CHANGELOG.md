@@ -14,7 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Phase 0: Hardware Discovery POC
   - Input device enumeration (keyboard/mouse) via Raw Input API
   - Display enumeration with resolution/refresh/position via Display Configuration API
-  - Windows session enumeration via WTS API
+  - Windows session enumeration via WTS API (never actually worked until 2026-10-24: every
+    WTS import was mis-cased, so each call failed and returned "no sessions"; see Fixed below)
   - Phase0.Poc console application for testing
 - Admin GUI (Phase 7): every page wired to a real backend — Devices, Seats, Displays,
   Audio, System, Input Isolation, Settings, Assign CPU Cores
@@ -25,6 +26,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MSI installer (Phase 8): `installer/Product.wxs`, built with WiX Toolset v5 —
   per-machine install, Start Menu and Desktop shortcuts, upgrade support
 - Modern UI theme across the whole admin console
+
+### Fixed (found by live-testing the shipped exe, 2026-10-24)
+- Keyboard/mouse "Indicate device" never blinked: the real cause was devices that had never
+  been scanned into the registry. Tile Layout now registers unknown keyboards/mice automatically.
+- Tile Layout crashed the app on drag-and-drop or Refresh (audio-meter list modified mid-loop);
+  an app-wide handler now logs unexpected errors instead of the process silently exiting
+- Five WTS P/Invokes plus one SetupAPI import named exports that don't exist; a new test now
+  resolves every native import in the product
+- Dashboard was a stub (hard-coded zeros, a "Validate" that always passed, a no-op "Export")
+- Page toolbars clipped their status text at the default window width
 
 ### In Development
 - Phase 3: Session Management — process launching works (`CreateProcessWithLogonW`),
@@ -122,8 +133,6 @@ The headline items:
   bound to a specific seat's monitor/keyboard/mouse. Real simultaneous multi-seat login
   needs RDS/MultiPoint-style session support or a Winlogon credential provider — neither exists here.
 - Input isolation is wired end-to-end in the GUI, but real enforcement is unconfirmed (Phase 5)
-- Keyboard/mouse "Indicate device" is still unconfirmed after three rounds of fixes;
-  a live diagnostic now reports which stage fails
 - Nothing is code-signed — neither the exe nor the MSI, and no kernel drivers exist
 - No GUI page talks to the Service over IPC; pages use the persistence layer directly
 - Displays have no persistence layer

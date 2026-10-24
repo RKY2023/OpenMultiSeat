@@ -14,12 +14,12 @@
         <TextBlock Grid.Row="1" FontSize="12" Foreground="#666666" TextWrapping="Wrap" Margin="0,0,0,10"
                    Text="Every device, display, and audio endpoint across every seat in one place -- closer to ASTER's shared System pool than the per-page (Devices/Displays/Audio) or per-seat (Seats then Configure) views. Assign/unassign here use the same underlying calls as those pages."/>
 
-        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,15">
-            <Button Content="Refresh" Click="OnRefresh" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,0,10,0"/>
-            <Button Content="Assign Selected To..." Click="OnAssignSelected" Background="#2D6CDF" Foreground="White" Padding="12,8" Margin="0,0,10,0"/>
-            <Button Content="Unassign Selected" Click="OnUnassignSelected" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,0,10,0"/>
-            <TextBlock x:Name="StatusText" VerticalAlignment="Center" Foreground="#666666" FontSize="12"/>
-        </StackPanel>
+        <WrapPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,7">
+            <Button Content="Refresh" Click="OnRefresh" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,0,10,8"/>
+            <Button Content="Assign Selected To..." Click="OnAssignSelected" Background="#2D6CDF" Foreground="White" Padding="12,8" Margin="0,0,10,8"/>
+            <Button Content="Unassign Selected" Click="OnUnassignSelected" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,0,10,8"/>
+            <TextBlock x:Name="StatusText" VerticalAlignment="Center" Margin="0,0,0,8" Foreground="#666666" FontSize="12"/>
+        </WrapPanel>
 
         <DataGrid Grid.Row="3" x:Name="SystemGrid" AutoGenerateColumns="False" IsReadOnly="True"
                   SelectionMode="Single" Background="White" BorderBrush="#CCCCCC">

@@ -11,14 +11,14 @@
 
         <TextBlock Grid.Row="0" Text="Input Isolation" FontSize="20" FontWeight="Bold" Margin="0,0,0,10"/>
 
-        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,15">
-            <Button x:Name="IsolationToggleButton" Content="Enable Isolation" Click="OnToggleIsolation" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,0,10,0"/>
-            <Button Content="Bind to Seat..." Click="OnBindToSeat" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,0,10,0"/>
-            <Button Content="Unbind" Click="OnUnbind" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,0,10,0"/>
-            <Button Content="Validate Configuration" Click="OnValidate" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,0,10,0"/>
-            <Button Content="Refresh" Click="OnRefresh" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,0,10,0"/>
-            <TextBlock x:Name="StatusText" VerticalAlignment="Center" Foreground="#666666" FontSize="12"/>
-        </StackPanel>
+        <WrapPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,7">
+            <Button x:Name="IsolationToggleButton" Content="Enable Isolation" Click="OnToggleIsolation" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,0,10,8"/>
+            <Button Content="Bind to Seat..." Click="OnBindToSeat" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,0,10,8"/>
+            <Button Content="Unbind" Click="OnUnbind" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,0,10,8"/>
+            <Button Content="Validate Configuration" Click="OnValidate" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,0,10,8"/>
+            <Button Content="Refresh" Click="OnRefresh" Background="#2D2D2D" Foreground="White" Padding="12,8" Margin="0,0,10,8"/>
+            <TextBlock x:Name="StatusText" VerticalAlignment="Center" Margin="0,0,0,8" Foreground="#666666" FontSize="12"/>
+        </WrapPanel>
 
         <DataGrid Grid.Row="2" x:Name="DevicesGrid" AutoGenerateColumns="False" IsReadOnly="True"
                   SelectionMode="Single" Background="White" BorderBrush="#CCCCCC">

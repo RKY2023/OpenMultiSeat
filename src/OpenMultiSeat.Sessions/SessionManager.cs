@@ -491,7 +491,9 @@ internal static class ProcessNativeMethods
 
     public const uint LOGON_WITH_PROFILE = 0x00000001;
 
-    [DllImport("wtsapi32.dll", SetLastError = true)]
+    // Explicit EntryPoint: the real export is "WTSQueryUserToken". Without it this always threw
+    // EntryPointNotFoundException, so CreateProcessInSession could never have worked.
+    [DllImport("wtsapi32.dll", EntryPoint = "WTSQueryUserToken", SetLastError = true)]
     public static extern bool WtsQueryUserToken(uint sessionId, out IntPtr phToken);
 
     [DllImport("userenv.dll", SetLastError = true)]

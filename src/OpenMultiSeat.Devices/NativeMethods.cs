@@ -86,7 +86,9 @@ internal static partial class NativeMethods
         uint propertyBufferSize,
         out uint requiredSize);
 
-    [DllImport(Kernel32Dll, SetLastError = true)]
+    // SetupAPI, not kernel32: imported from kernel32 this could only ever throw
+    // EntryPointNotFoundException (caught by NativeInteropEntryPointTests). Not called anywhere yet.
+    [DllImport(SetupApiDll, SetLastError = true, CharSet = CharSet.Auto)]
     public static extern bool SetupDiGetDeviceInstanceId(
         IntPtr deviceInfoSet,
         ref SpDevinfoData deviceInfoData,

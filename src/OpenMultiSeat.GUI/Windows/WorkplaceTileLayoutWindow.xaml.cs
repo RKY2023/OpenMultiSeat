@@ -9,6 +9,7 @@ using System.Windows.Shapes;
 using System.Windows.Threading;
 using AForge.Video;
 using AForge.Video.DirectShow;
+using Microsoft.Extensions.Logging;
 using OpenMultiSeat.Audio;
 using OpenMultiSeat.Core;
 using OpenMultiSeat.Devices;
@@ -61,6 +62,9 @@ public partial class WorkplaceTileLayoutWindow : Window
     private HwndSource? _hwndSource;
     private bool _rawInputRegistered;
     private int _rawInputEventCount;
+    private bool _autoRegisterInProgress;
+    private bool _audioPollInProgress;
+    private readonly HashSet<string> _autoRegisterAttemptedHardwareIds = [];
     private DispatcherTimer? _audioMeterTimer;
     private readonly List<VideoCaptureDevice> _activeCameraCaptures = [];
     private readonly HashSet<string> _audioTilesCurrentlyLive = [];
@@ -102,7 +106,18 @@ public partial class WorkplaceTileLayoutWindow : Window
         TileScrollViewer.SizeChanged += (_, _) => StretchColumnsToViewport();
 
         _audioMeterTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
-        _audioMeterTimer.Tick += async (_, _) => await PollAudioMetersAsync();
+        _audioMeterTimer.Tick += async (_, _) =>
+        {
+            // async void timer handler: anything thrown here is unhandled and terminates the whole
+            // process. A failed meter poll must never do that -- the next tick just tries again.
+            try
+            {
+                await PollAudioMetersAsync();
+            }
+            catch
+            {
+            }
+        };
         _audioMeterTimer.Start();
     }
 
@@ -718,6 +733,20 @@ public partial class WorkplaceTileLayoutWindow : Window
     /// whatever it is, visible from inside the app instead of another guess.</summary>
     private async Task HandleRawInputAsync(IntPtr hDevice, int eventNumber)
     {
+        // Called fire-and-forget from WndProc, so an exception here would otherwise vanish
+        // without a trace -- surface it in the diagnostic line instead.
+        try
+        {
+            await ResolveAndBlinkAsync(hDevice, eventNumber);
+        }
+        catch (Exception ex)
+        {
+            SetRawInputDiagnostic($"event #{eventNumber}: {ex.GetType().Name} while resolving the device: {ex.Message}");
+        }
+    }
+
+    private async Task ResolveAndBlinkAsync(IntPtr hDevice, int eventNumber)
+    {
         var devicePath = RawInputInterop.GetDevicePath(hDevice);
         if (string.IsNullOrEmpty(devicePath))
         {
@@ -732,10 +761,23 @@ public partial class WorkplaceTileLayoutWindow : Window
             return;
         }
 
+        // While an automatic registration scan is writing to the registry (on a thread-pool
+        // thread), don't read it from here -- a high-polling-rate mouse alone delivers dozens of
+        // events a second, and DevicePersistence's cache isn't safe to read mid-write.
+        if (_autoRegisterInProgress)
+            return;
+
         var device = await _devicePersistence.GetDeviceByHardwareIdAsync(hardwareId);
         if (device == null)
         {
-            SetRawInputDiagnostic($"event #{eventNumber}: hardware id \"{hardwareId}\" has no matching persisted device -- try Refresh or re-scanning on the Devices page.");
+            if (_autoRegisterAttemptedHardwareIds.Add(hardwareId))
+            {
+                await AutoRegisterInputDevicesAsync(eventNumber, hardwareId);
+            }
+            else
+            {
+                SetRawInputDiagnostic($"event #{eventNumber}: hardware id \"{hardwareId}\" still isn't a registered device even after an automatic scan -- check Devices → Scan Devices.");
+            }
             return;
         }
 
@@ -750,6 +792,39 @@ public partial class WorkplaceTileLayoutWindow : Window
         }
     }
 
+    /// <summary>A keyboard/mouse that's physically connected but was never scanned has no
+    /// registry record, so it can't have a tile and can never blink. Found by live testing: this
+    /// was the real reason keyboard/mouse Indicate "never worked". Every stage of the raw-input
+    /// pipeline was fine, but the user's actual USB mouse and keyboard had been plugged in after
+    /// the last Devices → Scan Devices, so every event ended at "no matching persisted device".
+    /// Runs the same raw-input scan the Devices page does, once per unknown hardware id, then
+    /// rebuilds the tiles so the device appears (in System, as unassigned) and blinks next time.</summary>
+    private async Task AutoRegisterInputDevicesAsync(int eventNumber, string hardwareId)
+    {
+        _autoRegisterInProgress = true;
+        SetRawInputDiagnostic($"event #{eventNumber}: input from a keyboard/mouse that was never scanned ({hardwareId}) -- registering connected input devices now...");
+        try
+        {
+            // Must write through this window's own _devicePersistence instance: DevicePersistence
+            // caches the registry after its first load, so a separate instance's writes wouldn't
+            // be visible to this window's lookups or to LoadAsync below.
+            var enumerator = new HidDeviceEnumerator(
+                GuiLoggerFactory.Instance.CreateLogger<HidDeviceEnumerator>(), _devicePersistence);
+            await enumerator.EnumerateAllDevicesAsync();
+        }
+        finally
+        {
+            _autoRegisterInProgress = false;
+        }
+
+        await LoadAsync();
+
+        var registered = await _devicePersistence.GetDeviceByHardwareIdAsync(hardwareId);
+        SetRawInputDiagnostic(registered != null
+            ? $"Registered \"{registered.ProductName ?? registered.StableId}\" (connected, but never scanned before) -- it now has a tile under System. Press a key / move it again to see it blink."
+            : $"hardware id \"{hardwareId}\" still isn't a registered device after an automatic scan -- check Devices → Scan Devices.");
+    }
+
     private void SetRawInputDiagnostic(string text)
     {
         if (RawInputDiagnosticText != null)
@@ -760,9 +835,32 @@ public partial class WorkplaceTileLayoutWindow : Window
 
     private const float AudioLiveThreshold = 0.02f;
 
+    /// <summary>Iterates a snapshot of _audioTiles, never the live list. Found by live testing as a
+    /// process crash ("Collection was modified; enumeration operation may not execute"): this loop
+    /// awaits GetPeakLevelAsync per tile, and anything that rebuilds the tiles during one of those
+    /// awaits -- LoadAsync, run by every drag-and-drop reassignment, the Refresh button, and
+    /// automatic device registration -- cleared and refilled the list underneath it. The exception
+    /// escaped the async void timer handler and terminated the app. Also skips a tick while the
+    /// previous poll is still running, so slow polls can't pile up on each other.</summary>
     private async Task PollAudioMetersAsync()
     {
-        foreach (var (resourceId, border) in _audioTiles)
+        if (_audioPollInProgress)
+            return;
+
+        _audioPollInProgress = true;
+        try
+        {
+            await PollAudioMetersCoreAsync();
+        }
+        finally
+        {
+            _audioPollInProgress = false;
+        }
+    }
+
+    private async Task PollAudioMetersCoreAsync()
+    {
+        foreach (var (resourceId, border) in _audioTiles.ToList())
         {
             float peak;
             try

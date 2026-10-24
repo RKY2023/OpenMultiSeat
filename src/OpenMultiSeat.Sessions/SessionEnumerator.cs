@@ -202,7 +202,13 @@ internal static class NativeMethods
         public uint State;
     }
 
-    [DllImport("wtsapi32.dll", SetLastError = true)]
+    // Explicit EntryPoints are required. DLL export lookup is case-sensitive and the real exports
+    // are "WTS..." (all caps), not "Wts...". Without them every one of these threw
+    // EntryPointNotFoundException, which EnumerateSessions/GetSessionString caught and turned into
+    // "no sessions", so session enumeration silently never worked (verified with GetProcAddress:
+    // "WtsEnumerateSessions" doesn't exist, "WTSEnumerateSessionsA" does). The ANSI "A" variants
+    // match WtsSessionInfo's LPStr field and GetSessionString's PtrToStringAnsi.
+    [DllImport("wtsapi32.dll", EntryPoint = "WTSEnumerateSessionsA", SetLastError = true)]
     public static extern bool WtsEnumerateSessions(
         IntPtr serverHandle,
         uint reserved,
@@ -210,10 +216,10 @@ internal static class NativeMethods
         out IntPtr ppSessionInfo,
         out uint pCount);
 
-    [DllImport("wtsapi32.dll", SetLastError = true)]
+    [DllImport("wtsapi32.dll", EntryPoint = "WTSFreeMemory", SetLastError = true)]
     public static extern void WtsFreeMemory(IntPtr pMemory);
 
-    [DllImport("wtsapi32.dll", SetLastError = true)]
+    [DllImport("wtsapi32.dll", EntryPoint = "WTSQuerySessionInformationA", SetLastError = true)]
     public static extern bool WtsQuerySessionInformation(
         IntPtr serverHandle,
         uint sessionId,
@@ -221,6 +227,7 @@ internal static class NativeMethods
         out IntPtr ppBuffer,
         out uint pBytesReturned);
 
-    [DllImport("wtsapi32.dll", SetLastError = true)]
+    // Exported by kernel32, not wtsapi32.
+    [DllImport("kernel32.dll", EntryPoint = "WTSGetActiveConsoleSessionId")]
     public static extern uint WtsGetActiveConsoleSessionId();
 }

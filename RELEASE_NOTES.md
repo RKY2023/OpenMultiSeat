@@ -1,8 +1,7 @@
 # OpenMultiSeat — Build & Release Notes
 
-**Build date:** 2026-08-31
+**Build date:** 2026-10-24 (live-tested the same day; see §4)
 **Branch:** `feature/cpu-core-affinity`
-**Head commit:** `c9bd8de`
 **Target platform:** Windows 10/11 x64
 
 This file consolidates everything about the current build: what the shipped artifacts are, where they live, what changed, what's been verified, and how to rebuild. For the full engineering detail behind each item — including what's still stubbed or unverified — see [docs/known-issues.md](docs/known-issues.md).
@@ -62,6 +61,16 @@ Running the app normally does **not** require Administrator. Two things do:
 
 ## 3. What changed in this build
 
+### Found and fixed by live testing (2026-10-24)
+The real exe was driven on your machine through Windows UI Automation (no synthetic clicks or keystrokes). Full detail: [docs/known-issues.md](docs/known-issues.md), "Round six".
+
+- **Keyboard/mouse "Indicate device" now works, and the real cause was data, not code.** Every stage of the raw-input pipeline was fine. Your actual USB mouse and keyboard had simply never been scanned into the device registry, so they had no tiles and nothing could blink. Tile Layout now registers an unknown keyboard/mouse automatically the first time it sends input. Verified live with a real blink.
+- **Tile Layout crashed the whole app** if a drag-and-drop or Refresh landed during the audio meter's 250 ms poll (the meter loop iterated a list that the reload cleared). Fixed, plus an app-wide safety net: unexpected errors now show a message and go to `%AppData%\OpenMultiSeat\crash-log.txt` instead of silently closing the app.
+- **Windows session enumeration had never worked.** Five P/Invoke names were mis-cased (`Wts…` instead of `WTS…`), so every call failed and was reported as "no sessions". Fixed, and a new test checks that every native import in the product resolves. It caught a sixth wrong import as well.
+- **Dashboard was a stub:** stats hard-coded to 0, "Validate" always said "valid", "Export" did nothing. Now real counts, real validation and a real config export (.zip).
+- **Toolbars clipped** their status text on six pages. They now wrap.
+- **Smaller:** after an elevated Start Mode relaunch, the dropdown now shows the newly applied mode. The User Account dialog's password label no longer clips, and its description no longer claims saved logins are unused.
+
 ### New: real MSI installer (`c9bd8de`)
 Built from `installer/Product.wxs` with WiX Toolset v5. Supports `MajorUpgrade`, so a future MSI with a higher version and the same `UpgradeCode` replaces this install automatically instead of going side-by-side.
 
@@ -91,7 +100,7 @@ A genuine, long-standing bug found during investigation: the enum declared `{ Mo
 **Note:** already-persisted device records aren't retroactively corrected — run **Devices → Scan Devices** once to pick up the fix for currently-connected hardware.
 
 ### Added: live raw-input diagnostic in Tile Layout (`c892f03`)
-Keyboard/mouse "Indicate device" still hadn't been confirmed working after two rounds of fixes. Rather than guess a third time, the Tile Layout window now shows a live one-line diagnostic that updates on every raw-input event, naming exactly which stage it reached (registration → device resolution → hardware ID → device lookup → tile lookup → "blinking now"). **This is the key open item — see §4.**
+Keyboard/mouse "Indicate device" still hadn't been confirmed working after two rounds of fixes. Rather than guess a third time, the Tile Layout window now shows a live one-line diagnostic that updates on every raw-input event, naming exactly which stage it reached (registration → device resolution → hardware ID → device lookup → tile lookup → "blinking now"). That line is what exposed the real cause during live testing (above).
 
 ### Earlier in this series
 - `90d2e52` — keyboard/mouse Indicate: registered with `RIDEV_INPUTSINK` so raw input is delivered while the window is open rather than only while it's the foreground window.
@@ -105,20 +114,27 @@ Keyboard/mouse "Indicate device" still hadn't been confirmed working after two r
 | Item | Status |
 |---|---|
 | `OpenMultiSeat.GUI.csproj` Release build | ✅ Clean (pre-existing warnings only) |
-| Unit tests | ✅ 54/54 passing |
-| MSI is a well-formed package | ✅ Opened via the Windows Installer COM API; identity properties confirmed |
-| Display "Identify" overlay, audio level meter | ✅ Confirmed working by you |
-| **MSI install / uninstall actually run** | ❌ **Not done** — a real per-machine install changes system state, left for you |
-| **Keyboard/Mouse "Indicate device"** | ❌ **Still unconfirmed** — diagnostic added to pinpoint it |
-| Dialog-cropping fixes (9 windows) | ⏳ Built and shipped, not yet retested by you |
-| Tile Layout drop-area fix | ⏳ Built and shipped, not yet retested by you |
-| Workplace Start Mode UAC relaunch | ⏳ Built and shipped, not yet retested by you |
+| Unit tests | ✅ 55/55 passing, including the new native-import check |
+| App launches, renders, all pages load real data | ✅ **Live-tested** |
+| Keyboard/Mouse "Indicate device" | ✅ **Live-tested**: real mouse events blinked the right tile, including a device registered automatically |
+| Dialog-cropping fixes | ✅ **Live-tested**: Workplace Tab Settings forced to its minimum size still shows Save/Cancel; Create Seat and User Account buttons inside bounds |
+| Tile Layout drop-area stretch | ✅ **Live-tested**: an empty seat column fills the full viewport height |
+| Workplace Start Mode, not elevated | ✅ **Live-tested**: shows the restart-as-Administrator prompt; "No" leaves Manual and registers nothing |
+| `--apply-start-mode` relaunch path | ✅ **Live-tested**: opens straight to Settings; the elevation guard refuses cleanly when not elevated |
+| Dashboard counts | ✅ **Live-tested**: 55 / 4 / 1 / 1, matching the registry, `seats.json`, displays and Windows' own logon sessions |
+| MSI contents | ✅ Administrative extraction gives a payload byte-identical to the exe; directory and shortcut tables correct |
+| Display "Identify" overlay, audio level meter | ✅ Confirmed working by you earlier |
+| **MSI install / uninstall actually run** | ❌ **Not done**: needs a human to approve the UAC prompt |
+| **Elevated Start Mode apply (after clicking "Yes" on UAC)** | ❌ **Not done**: same reason; the non-elevated half and the relaunch path are verified |
 | Camera preview | ⏳ Pending first verification |
+| Drag-and-drop itself | ⏳ Not exercised: UI Automation can't perform a real drag. The crash that a drag could trigger is fixed |
 
-**Why so much is unverified:** GUI and hardware-interop behavior in this project is verified by build + tests + code review only. This session runs on your live desktop, and after an earlier simulated mouse click landed on the wrong window, all further live-desktop UI automation was stopped. Anything requiring a real key press, mouse move, drag, UAC click, or installer run needs you.
+**How live testing was done safely:** the app was driven only through UI Automation patterns on its own elements, with PrintWindow captures of only its own windows, so nothing could land in another application. The one exception was a single zero-pixel injected mouse move, used to prove `WM_INPUT` delivery. Your seat configuration was backed up first and is byte-identical afterwards. The device registry ends in the state of a normal Devices → Scan Devices (55 records).
 
-### The one open question
-Open **Seats → Tile Layout…**, press a key / move the mouse, and tell me what the diagnostic line at the top of the window says. That single line identifies exactly which stage of the raw-input pipeline is failing, and resolves the keyboard/mouse Indicate issue for good — it's been through three rounds of individually-correct fixes that each turned out to be insufficient.
+### What's left for you
+1. Install and uninstall the MSI once.
+2. Pick "Automatically at system startup", click **Yes** on the UAC prompt, and check the dropdown shows the new mode in the relaunched window. Then switch back to Manual the same way.
+3. Right-click a camera tile in Tile Layout to check the live preview.
 
 ---
 

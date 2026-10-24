@@ -56,6 +56,33 @@ public partial class App : Application
         }
     }
 
+    /// <summary>Last-resort handler for exceptions that reach the UI thread unhandled -- including
+    /// those thrown from async void event handlers, which WPF re-raises on the dispatcher. Without
+    /// it, any one of them silently terminates the whole process: found by live testing when a
+    /// Tile Layout audio-meter race killed the app with nothing shown to the user. Logs the full
+    /// exception to %AppData%\OpenMultiSeat\crash-log.txt, tells the user, and keeps running.</summary>
+    internal static void OnDispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
+    {
+        try
+        {
+            var path = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "OpenMultiSeat", "crash-log.txt");
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            File.AppendAllText(path, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} {e.Exception}{Environment.NewLine}{Environment.NewLine}");
+        }
+        catch
+        {
+            // Logging is best-effort; never let it turn a handled error back into a crash.
+        }
+
+        MessageBox.Show(
+            $"Something went wrong, but OpenMultiSeat is still running:\n\n{e.Exception.GetType().Name}: {e.Exception.Message}\n\n" +
+            "Details were saved to %AppData%\\OpenMultiSeat\\crash-log.txt.",
+            "OpenMultiSeat", MessageBoxButton.OK, MessageBoxImage.Error);
+        e.Handled = true;
+    }
+
     private static void AppendStartupLog(string line)
     {
         try
